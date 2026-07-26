@@ -1,0 +1,11 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="720" fill="#050505"/>
+  <path d="M88 580C236 360 366 287 532 361C698 435 793 394 1078 114" stroke="#F6F6F6" stroke-width="2" stroke-dasharray="8 20"/>
+  <path d="M113 455C271 271 412 226 583 303C754 380 843 335 1059 183" stroke="#7DD3FC" stroke-width="3"/>
+  <circle cx="220" cy="414" r="6" fill="#F6F6F6"/>
+  <circle cx="589" cy="305" r="6" fill="#F6F6F6"/>
+  <circle cx="958" cy="248" r="6" fill="#F6F6F6"/>
+  <text x="80" y="126" fill="#F6F6F6" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="700" letter-spacing="8">TRANCE WEEKEND</text>
+  <text x="82" y="172" fill="#A1A1AA" font-family="Arial, Helvetica, sans-serif" font-size="22" letter-spacing="5">OBSERVATORY DEFAULT COVER</text>
+  <text x="82" y="630" fill="#F6F6F6" font-family="Arial, Helvetica, sans-serif" font-size="28" letter-spacing="4">今日传思浓度检测中</text>
+</svg>

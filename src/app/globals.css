@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+:root {
+  --background: #050505;
+  --foreground: #f4f4f5;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: #7dd3fc;
+  color: #050505;
+}
+
+a {
+  text-underline-offset: 4px;
+}

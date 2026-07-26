@@ -1,0 +1,42 @@
+{
+  "name": "trance-weekend-observatory",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:vercel": "prisma generate --schema prisma/schema.postgres.prisma && next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:push": "prisma db push --schema prisma/schema.prisma",
+    "db:push:prod": "prisma db push --schema prisma/schema.postgres.prisma",
+    "db:seed": "tsx prisma/seed.ts",
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+    "prisma:generate:prod": "prisma generate --schema prisma/schema.postgres.prisma"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "cheerio": "^1.2.0",
+    "clsx": "^2.1.1",
+    "next": "16.2.9",
+    "openai": "^6.45.0",
+    "prisma": "^5.22.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "tailwindcss": "^4",
+    "tsx": "^4.22.4",
+    "typescript": "^5"
+  }
+}
