@@ -126,7 +126,7 @@ curl "http://localhost:3001/api/cron/auto-draft?secret=$CRON_SECRET"
 
 1. 将仓库推送到私有 GitHub 仓库，并在 Vercel 导入该仓库。
 2. 在 Vercel 的 Production 环境变量中填写 `DATABASE_URL`、`AI_PROVIDER`、`AI_API_KEY`、`AI_BASE_URL`、`AI_MODEL`、`ADMIN_PASSWORD`、`ADMIN_COOKIE_SECRET`、`CRON_SECRET`、`AUTO_DRAFT_LIMIT=20`、`AUTO_DRAFT_MIN_CANDIDATES=10`、`AUTO_DRAFT_RETENTION_DAYS=7` 和 `AUTO_DRAFT_MAX_SOURCE_AGE_DAYS=7`。
-3. Vercel 会使用 `npm run build:vercel`，在构建时使用生产 `DATABASE_URL` 同步空 Supabase 数据库表结构、生成 PostgreSQL Prisma Client，再构建 Next.js。应用早期采用 `db push` 保持上线步骤轻量；后续引入正式 migration 后再切换为 `prisma migrate deploy`。
+3. Vercel 会使用 `npm run build:vercel`，在构建时使用生产 `DATABASE_URL` 同步空 Supabase 数据库表结构、生成 PostgreSQL Prisma Client、幂等写入默认内容源，再构建 Next.js。应用早期采用 `db push` 保持上线步骤轻量；后续引入正式 migration 后再切换为 `prisma migrate deploy`。
 4. `vercel.json` 会每天 UTC 01:00（北京时间约 09:00）调用自动草稿任务。任务只生成候选草稿，绝不自动发布。
 
 首次上线可手动调用一次 14 天补抓，随后所有日常任务仍使用默认 7 天窗口：
