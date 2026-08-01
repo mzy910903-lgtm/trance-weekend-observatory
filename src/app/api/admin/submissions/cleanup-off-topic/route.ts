@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   const url = new URL("/admin", request.url);
   url.searchParams.set("status", "ANALYZED");
   url.searchParams.set(
-    "scan",
+    "cleanup",
     String(result.rejectedPending + result.archivedDrafts),
   );
 

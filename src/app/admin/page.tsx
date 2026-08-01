@@ -666,6 +666,12 @@ function QueuePanel({
         >
           <div className="flex flex-wrap gap-2">
             <button
+              formAction="/api/admin/submissions/refresh-core"
+              className="rounded-full bg-sky-300 px-4 py-2 text-sm font-semibold text-black transition hover:bg-white"
+            >
+              刷新传思主线候选
+            </button>
+            <button
               formAction="/api/admin/submissions/cleanup-off-topic"
               className="rounded-full border border-red-300/30 px-4 py-2 text-sm text-red-100 transition hover:border-red-300 hover:bg-red-300 hover:text-black"
             >
@@ -717,9 +723,13 @@ export default async function AdminPage({
     tab?: string;
     scan?: string;
     scanError?: string;
+    cleanup?: string;
+    refreshed?: string;
+    refreshError?: string;
   }>;
 }) {
-  const { status, tab, scan, scanError } = await searchParams;
+  const { status, tab, scan, scanError, cleanup, refreshed, refreshError } =
+    await searchParams;
   const activeTab = tab === "sources" ? "sources" : "queue";
   const activeStatus = statusFilters.some((item) => item.key === status)
     ? status
@@ -781,6 +791,21 @@ export default async function AdminPage({
       {scanError ? (
         <div className="mt-5 rounded border border-red-300/20 bg-red-950/30 p-4 text-sm text-red-100">
           {decodeURIComponent(scanError)}
+        </div>
+      ) : null}
+      {cleanup ? (
+        <div className="mt-5 rounded border border-emerald-300/20 bg-emerald-300/10 p-4 text-sm text-emerald-100">
+          已移出 {cleanup} 条非传思候选，已发布内容未受影响。
+        </div>
+      ) : null}
+      {refreshed ? (
+        <div className="mt-5 rounded border border-sky-300/20 bg-sky-300/10 p-4 text-sm text-sky-100">
+          主线候选刷新完成：新增 {refreshed} 条已分析草稿。普通发歌和低信号节目已自动跳过。
+        </div>
+      ) : null}
+      {refreshError ? (
+        <div className="mt-5 rounded border border-yellow-300/20 bg-yellow-300/10 p-4 text-sm text-yellow-100">
+          {decodeURIComponent(refreshError)}
         </div>
       ) : null}
 
