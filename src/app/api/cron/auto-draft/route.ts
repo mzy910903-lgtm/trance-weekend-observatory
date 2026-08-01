@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { runAutoDraft } from "@/lib/auto-draft";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function readBearerToken(request: Request) {
   const authorization = request.headers.get("authorization");

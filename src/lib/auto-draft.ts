@@ -146,11 +146,17 @@ export async function runAutoDraft(options?: { maxSourceAgeDays?: number }) {
     select: { id: true, name: true },
   });
 
+  const sourceResults = await Promise.all(
+    sources.map(async (source) => ({
+      source,
+      result: await scanSource(source.id, options),
+    })),
+  );
+
   let created = 0;
   const sourceFailures: string[] = [];
 
-  for (const source of sources) {
-    const result = await scanSource(source.id, options);
+  for (const { source, result } of sourceResults) {
     if (result.ok) {
       created += result.created;
     } else {
