@@ -4,6 +4,7 @@ import { categories, categoryLabel, SubmissionStatus } from "@/lib/categories";
 import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { sourceTypeOptions } from "@/lib/source-types";
+import { classifyTranceScope, editorialScopeLabel } from "@/lib/trance-relevance";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +74,18 @@ function scrapeBadge(status?: string | null) {
   return "border-zinc-500/30 bg-white/[0.04] text-zinc-400";
 }
 
+function scopeClass(scope: "CORE" | "CONTEXT" | "OFF_TOPIC") {
+  if (scope === "CORE") {
+    return "border-violet-300/30 bg-violet-300/10 text-violet-100";
+  }
+
+  if (scope === "CONTEXT") {
+    return "border-amber-300/30 bg-amber-300/10 text-amber-100";
+  }
+
+  return "border-red-300/30 bg-red-300/10 text-red-100";
+}
+
 function QueueCard({
   submission,
   returnTo,
@@ -80,6 +93,14 @@ function QueueCard({
   submission: SubmissionWithRelations;
   returnTo: string;
 }) {
+  const scope = classifyTranceScope({
+    title: submission.rawTitle,
+    url: submission.url,
+    rawExcerpt: submission.rawExcerpt,
+    note: submission.note,
+    source: submission.source,
+  });
+
   return (
     <div className="rounded border border-white/10 bg-white/[0.03] p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -103,6 +124,9 @@ function QueueCard({
               )}`}
             >
               {submission.status}
+            </span>
+            <span className={`rounded-full border px-2 py-1 ${scopeClass(scope)}`}>
+              {editorialScopeLabel(scope)}
             </span>
             <span>/</span>
             <span>{formatDate(submission.createdAt)}</span>
@@ -611,7 +635,7 @@ function QueuePanel({
     <>
       {isDraftReview ? (
         <div className="mt-6 rounded border border-sky-300/20 bg-sky-300/10 p-4 text-sm leading-6 text-sky-100">
-          这里是资讯 + 趣闻候选池，不是发歌列表。系统每天以 10 条为目标、20 条为上限，所有来源只收 7 天内内容；口碑厂牌与趣闻栏目只改变题材优先级，不放宽时效。普通单曲、Remix、EP 预览和低信号通稿会被筛掉。你每天手动精选 3 条发布即可。
+          这里是以传思为主线的资讯 + 趣闻候选池，不是发歌列表。系统优先保留 Trance 强关联内容，相邻电子乐趣闻最多占 20%；所有来源只收 7 天内内容。普通单曲、Remix、EP 预览、泛硬件与无关 EDM 通稿会被筛掉。你每天手动精选 3 条发布即可。
         </div>
       ) : null}
 
@@ -641,6 +665,12 @@ function QueuePanel({
           method="post"
         >
           <div className="flex flex-wrap gap-2">
+            <button
+              formAction="/api/admin/submissions/cleanup-off-topic"
+              className="rounded-full border border-red-300/30 px-4 py-2 text-sm text-red-100 transition hover:border-red-300 hover:bg-red-300 hover:text-black"
+            >
+              清理跑偏候选
+            </button>
             <button
               formAction="/api/admin/submissions/scrape-batch"
               className="rounded-full border border-white/20 px-4 py-2 text-sm text-zinc-300 transition hover:border-sky-300 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"

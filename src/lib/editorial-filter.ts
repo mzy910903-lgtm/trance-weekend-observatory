@@ -11,7 +11,10 @@ export type EditorialDecision = {
   accepted: boolean;
   score: number;
   reason: string;
+  scope: import("@/lib/trance-relevance").EditorialScope;
 };
+
+import { classifyTranceScope } from "@/lib/trance-relevance";
 
 const lowSignalPatterns = [
   /\bweekly\b/i,
@@ -254,6 +257,7 @@ function matchesAny(patterns: RegExp[], text: string) {
 export function judgeAutoDraftCandidate(candidate: Candidate): EditorialDecision {
   const text = normalizedText(candidate);
   const titleText = candidate.title ?? "";
+  const scope = classifyTranceScope(candidate);
   const lowSignal = countMatches(lowSignalPatterns, text);
   const drama = countMatches(dramaticPatterns, text);
   const interesting = countMatches(interestingPatterns, text);
@@ -298,11 +302,39 @@ export function judgeAutoDraftCandidate(candidate: Candidate): EditorialDecision
     (communitySignalSource ? 3 : 0) -
     missingPublishedAtPenalty;
 
+  if (scope === "OFF_TOPIC") {
+    return {
+      accepted: false,
+      score,
+      scope,
+      reason: "自动草稿跳过：非传思主题，泛 EDM / 硬件 / 无关现场不进入候选池。",
+    };
+  }
+
   if (ordinaryRelease && strongEvent === 0 && importance < 2) {
     return {
       accepted: false,
       score,
+      scope,
       reason: "自动草稿跳过：普通发歌/Remix/EP 预览，不进入资讯及趣闻候选池。",
+    };
+  }
+
+  if (scope === "CONTEXT") {
+    if (lowSignal > 0 || ordinaryPromo > 0 || funStory === 0 || score < 2) {
+      return {
+        accepted: false,
+        score,
+        scope,
+        reason: "自动草稿跳过：相邻电子乐内容缺少明确传思编辑价值。",
+      };
+    }
+
+    return {
+      accepted: true,
+      score,
+      scope,
+      reason: `通过相邻趣闻筛选：有明确电子乐文化关联，综合分 ${score}。`,
     };
   }
 
@@ -315,6 +347,7 @@ export function judgeAutoDraftCandidate(candidate: Candidate): EditorialDecision
     return {
       accepted: true,
       score,
+      scope,
       reason: `通过补位候选筛选：口碑/趣闻信号 ${reputationSignal + evergreenStory + funStory}，综合分 ${score}。`,
     };
   }
@@ -323,6 +356,7 @@ export function judgeAutoDraftCandidate(candidate: Candidate): EditorialDecision
     return {
       accepted: false,
       score,
+      scope,
       reason: "自动草稿跳过：社区线索源仅保留强事件，普通发歌帖先挡在候选池外。",
     };
   }
@@ -331,6 +365,7 @@ export function judgeAutoDraftCandidate(candidate: Candidate): EditorialDecision
     return {
       accepted: false,
       score,
+      scope,
       reason: "自动草稿跳过：新闻性/趣味性不足，命中周更、mix、歌单或榜单类低信号内容。",
     };
   }
@@ -339,6 +374,7 @@ export function judgeAutoDraftCandidate(candidate: Candidate): EditorialDecision
     return {
       accepted: false,
       score,
+      scope,
       reason: "自动草稿跳过：普通发布/官宣/阵容稿，缺少争议、反转、社区热议或明确重要性。",
     };
   }
@@ -347,6 +383,7 @@ export function judgeAutoDraftCandidate(candidate: Candidate): EditorialDecision
     return {
       accepted: false,
       score,
+      scope,
       reason: "自动草稿跳过：低新闻性，缺少事件、趣闻、社区讨论或明确场景影响。",
     };
   }
@@ -355,6 +392,7 @@ export function judgeAutoDraftCandidate(candidate: Candidate): EditorialDecision
     return {
       accepted: false,
       score,
+      scope,
       reason: "自动草稿跳过：新鲜度通过，但事件性/趣味性分数不足。",
     };
   }
@@ -362,6 +400,7 @@ export function judgeAutoDraftCandidate(candidate: Candidate): EditorialDecision
   return {
     accepted: true,
     score,
+    scope,
     reason: `通过自动草稿筛选：新鲜度通过，事件性 ${drama}、重要性 ${importance}、趣味/社区信号 ${interesting}、强事件信号 ${strongEvent}，综合分 ${score}。`,
   };
 }

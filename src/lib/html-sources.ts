@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import type { FeedItem, FeedScanResult } from "@/lib/feeds";
+import { filterCoreTranceItems } from "@/lib/source-filters";
 
 const SOURCE_USER_AGENT =
   "TranceWeekendObservatory/0.1 (+https://tranceweekend.local)";
@@ -79,30 +80,8 @@ export async function fetchRaNewsHtml(url: string): Promise<FeedScanResult> {
   return { title: "Resident Advisor Trance News", items };
 }
 
-const beatportalKeepPatterns = [
-  /trance/i,
-  /anjuna/i,
-  /above\s*&\s*beyond/i,
-  /armin/i,
-  /ti[eë]sto/i,
-  /paul\s+van\s+dyk/i,
-  /ferry\s+corsten/i,
-  /solarstone/i,
-  /orkidea/i,
-  /dreamstate/i,
-  /state\s+of\s+trance/i,
-  /black\s+hole/i,
-  /enhanced/i,
-  /progressive/i,
-];
-
 function isBeatportalArticle(url: string) {
   return /^https:\/\/www\.beatportal\.com\/articles\/\d+-/.test(url);
-}
-
-function shouldKeepBeatportalItem(item: FeedItem) {
-  const text = `${item.title}\n${item.url}\n${item.excerpt}`;
-  return beatportalKeepPatterns.some((pattern) => pattern.test(text));
 }
 
 export async function fetchBeatportalHtml(url: string): Promise<FeedScanResult> {
@@ -128,9 +107,16 @@ export async function fetchBeatportalHtml(url: string): Promise<FeedScanResult> 
       })
       .get()
       .filter(Boolean) as FeedItem[],
-  )
-    .filter(shouldKeepBeatportalItem)
-    .slice(0, 30);
+  ).slice(0, 30);
 
-  return { title: "Beatportal", items };
+  const filteredItems = filterCoreTranceItems(items, {
+    name: "Beatportal",
+    type: "BEATPORTAL_HTML",
+  });
+
+  return {
+    title: "Beatportal",
+    items: filteredItems,
+    message: `传思筛选：主线 ${filteredItems.length} 条，过滤无关 ${items.length - filteredItems.length} 条。`,
+  };
 }

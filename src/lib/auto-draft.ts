@@ -4,6 +4,7 @@ import { judgeAutoDraftCandidate } from "@/lib/editorial-filter";
 import { judgeNewsRecency } from "@/lib/news-recency";
 import { prisma } from "@/lib/prisma";
 import { scanSource } from "@/lib/source-scan";
+import { classifyTranceScope } from "@/lib/trance-relevance";
 
 const DEFAULT_AUTO_DRAFT_LIMIT = 20;
 const MAX_AUTO_DRAFT_LIMIT = 30;
@@ -26,6 +27,10 @@ function parseAutoDraftMinCandidates(limit: number) {
   const value = Number.parseInt(process.env.AUTO_DRAFT_MIN_CANDIDATES ?? "", 10);
   if (Number.isNaN(value)) return Math.min(DEFAULT_AUTO_DRAFT_MIN_CANDIDATES, limit);
   return Math.min(Math.max(value, 0), limit);
+}
+
+export function calculateContextLimit(limit: number, analyzedCore: number) {
+  return Math.min(Math.floor(limit * 0.2), Math.floor(analyzedCore / 4));
 }
 
 async function cleanupExpiredDrafts() {
@@ -136,11 +141,79 @@ async function cleanupStaleDrafts() {
   return { archived: staleDrafts.length };
 }
 
+export async function cleanupOutOfScopeCandidates() {
+  const submissions = await prisma.submission.findMany({
+    where: {
+      sourceId: { not: null },
+      status: { in: [SubmissionStatus.PENDING, SubmissionStatus.ANALYZED] },
+    },
+    select: {
+      id: true,
+      status: true,
+      url: true,
+      rawTitle: true,
+      rawExcerpt: true,
+      note: true,
+      source: { select: { name: true, type: true } },
+      article: { select: { id: true, status: true } },
+    },
+  });
+
+  const offTopic = submissions.filter(
+    (submission) =>
+      classifyTranceScope({
+        title: submission.rawTitle,
+        url: submission.url,
+        rawExcerpt: submission.rawExcerpt,
+        note: submission.note,
+        source: submission.source,
+      }) === "OFF_TOPIC",
+  );
+
+  if (offTopic.length === 0) {
+    return { rejectedPending: 0, archivedDrafts: 0 };
+  }
+
+  const pendingIds = offTopic
+    .filter((submission) => submission.status === SubmissionStatus.PENDING)
+    .map((submission) => submission.id);
+  const draftArticles = offTopic
+    .filter(
+      (submission) =>
+        submission.status === SubmissionStatus.ANALYZED &&
+        submission.article?.status === ArticleStatus.DRAFT,
+    )
+    .flatMap((submission) => (submission.article ? [submission.article.id] : []));
+
+  await prisma.$transaction(async (tx) => {
+    if (draftArticles.length > 0) {
+      await tx.article.updateMany({
+        where: { id: { in: draftArticles } },
+        data: { status: ArticleStatus.ARCHIVED },
+      });
+    }
+
+    await tx.submission.updateMany({
+      where: { id: { in: offTopic.map((submission) => submission.id) } },
+      data: {
+        status: SubmissionStatus.REJECTED,
+        errorMessage: "自动清理：非传思主题，已移出资讯 + 趣闻候选池。",
+      },
+    });
+  });
+
+  return {
+    rejectedPending: pendingIds.length,
+    archivedDrafts: draftArticles.length,
+  };
+}
+
 export async function runAutoDraft(options?: { maxSourceAgeDays?: number }) {
   const limit = parseAutoDraftLimit();
   const minCandidates = parseAutoDraftMinCandidates(limit);
   const cleanup = await cleanupExpiredDrafts();
   const staleCleanup = await cleanupStaleDrafts();
+  const scopeCleanup = await cleanupOutOfScopeCandidates();
   const sources = await prisma.source.findMany({
     where: { enabled: true, feedUrl: { not: null } },
     select: { id: true, name: true },
@@ -187,10 +260,10 @@ export async function runAutoDraft(options?: { maxSourceAgeDays?: number }) {
   const analyzed: string[] = [];
   const skipped: { id: string; url: string; reason: string; score: number }[] = [];
   const analysisFailures: { id: string; url: string; error: string }[] = [];
+  const coreCandidates: typeof pendingSubmissions = [];
+  const contextCandidates: typeof pendingSubmissions = [];
 
   for (const submission of pendingSubmissions) {
-    if (analyzed.length >= limit) break;
-
     const recency = judgeNewsRecency(
       {
         title: submission.rawTitle,
@@ -247,17 +320,41 @@ export async function runAutoDraft(options?: { maxSourceAgeDays?: number }) {
       continue;
     }
 
-    const result = await analyzeSubmission(submission.id, options);
-    if (result.ok) {
-      analyzed.push(submission.id);
+    if (decision.scope === "CORE") {
+      coreCandidates.push(submission);
     } else {
-      analysisFailures.push({
-        id: submission.id,
-        url: submission.url,
-        error: result.error ?? "分析失败。",
-      });
+      contextCandidates.push(submission);
     }
   }
+
+  async function analyzeCandidates(
+    candidates: typeof pendingSubmissions,
+    max: number,
+  ) {
+    let completed = 0;
+
+    for (const submission of candidates) {
+      if (completed >= max) break;
+
+      const result = await analyzeSubmission(submission.id, options);
+      if (result.ok) {
+        analyzed.push(submission.id);
+        completed += 1;
+      } else {
+        analysisFailures.push({
+          id: submission.id,
+          url: submission.url,
+          error: result.error ?? "分析失败。",
+        });
+      }
+    }
+
+    return completed;
+  }
+
+  const analyzedCore = await analyzeCandidates(coreCandidates, limit);
+  const contextLimit = calculateContextLimit(limit, analyzedCore);
+  const analyzedContext = await analyzeCandidates(contextCandidates, contextLimit);
 
   return {
     ok: sourceFailures.length === 0 && analysisFailures.length === 0,
@@ -269,8 +366,13 @@ export async function runAutoDraft(options?: { maxSourceAgeDays?: number }) {
     draftRetentionDays: cleanup.retentionDays,
     expiredDraftsArchived: cleanup.archived,
     staleDraftsArchived: staleCleanup.archived,
+    offTopicPendingRejected: scopeCleanup.rejectedPending,
+    offTopicDraftsArchived: scopeCleanup.archivedDrafts,
     selectedPending: pendingSubmissions.length,
     analyzed: analyzed.length,
+    analyzedCore,
+    analyzedContext,
+    contextLimit,
     analyzedIds: analyzed,
     skipped: skipped.length,
     skippedItems: skipped,

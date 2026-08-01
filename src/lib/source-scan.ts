@@ -5,16 +5,46 @@ import { fetchInstagramHashtagRadar } from "@/lib/instagram-sources";
 import { judgeNewsRecency } from "@/lib/news-recency";
 import { prisma } from "@/lib/prisma";
 import {
+  filterCoreTranceItems,
   filterFunRadarItems,
   filterGenericEdmItems,
   filterLabelRadarItems,
   filterYouTubeItems,
 } from "@/lib/source-filters";
 import { SourceType } from "@/lib/source-types";
+import { classifyTranceScope } from "@/lib/trance-relevance";
 
-async function fetchSourceItems(source: { type: string; feedUrl: string }) {
+type ScanSource = { name: string; type: string; feedUrl: string };
+
+function relevanceMessage(
+  label: string,
+  total: number,
+  items: Awaited<ReturnType<typeof fetchFeed>>["items"],
+  source: ScanSource,
+) {
+  const core = items.filter(
+    (item) =>
+      classifyTranceScope({
+        title: item.title,
+        url: item.url,
+        rawExcerpt: item.excerpt,
+        source,
+      }) === "CORE",
+  ).length;
+  const context = items.length - core;
+
+  return `${label}：主线 ${core} 条，相邻 ${context} 条，过滤无关 ${total - items.length} 条。`;
+}
+
+async function fetchSourceItems(source: ScanSource) {
   if (source.type === SourceType.RA_NEWS_HTML) {
-    return fetchRaNewsHtml(source.feedUrl);
+    const feed = await fetchRaNewsHtml(source.feedUrl);
+    const items = filterCoreTranceItems(feed.items, source);
+    return {
+      ...feed,
+      items,
+      message: relevanceMessage("RA 传思筛选", feed.items.length, items, source),
+    };
   }
 
   if (source.type === SourceType.BEATPORTAL_HTML) {
@@ -28,29 +58,29 @@ async function fetchSourceItems(source: { type: string; feedUrl: string }) {
   const feed = await fetchFeed(source.feedUrl);
 
   if (source.type === SourceType.GENERIC_EDM_RSS) {
-    const items = filterGenericEdmItems(feed.items);
+    const items = filterGenericEdmItems(feed.items, source);
     return {
       ...feed,
       items,
-      message: `泛 EDM 过滤：${feed.items.length} 条中保留 ${items.length} 条 Trance 相关线索。`,
+      message: relevanceMessage("泛 EDM 传思筛选", feed.items.length, items, source),
     };
   }
 
   if (source.type === SourceType.LABEL_RADAR_RSS) {
-    const items = filterLabelRadarItems(feed.items);
+    const items = filterLabelRadarItems(feed.items, source);
     return {
       ...feed,
       items,
-      message: `口碑厂牌过滤：${feed.items.length} 条中保留 ${items.length} 条厂牌/幕后/经典线索。`,
+      message: relevanceMessage("口碑厂牌筛选", feed.items.length, items, source),
     };
   }
 
   if (source.type === SourceType.FUN_RADAR_RSS) {
-    const items = filterFunRadarItems(feed.items);
+    const items = filterFunRadarItems(feed.items, source);
     return {
       ...feed,
       items,
-      message: `趣闻过滤：${feed.items.length} 条中保留 ${items.length} 条人物/争议/幕后线索。`,
+      message: relevanceMessage("趣闻传思筛选", feed.items.length, items, source),
     };
   }
 
@@ -63,7 +93,12 @@ async function fetchSourceItems(source: { type: string; feedUrl: string }) {
     };
   }
 
-  return feed;
+  const items = filterCoreTranceItems(feed.items, source);
+  return {
+    ...feed,
+    items,
+    message: relevanceMessage("传思筛选", feed.items.length, items, source),
+  };
 }
 
 export async function scanSource(
@@ -82,6 +117,7 @@ export async function scanSource(
 
   try {
     const feed = await fetchSourceItems({
+      name: source.name,
       type: source.type,
       feedUrl: source.feedUrl,
     });

@@ -1,36 +1,5 @@
 import type { FeedItem } from "@/lib/feeds";
-
-const tranceSignalPatterns = [
-  /trance/i,
-  /progressive/i,
-  /uplifting/i,
-  /psy(?:chedelic)?\s*trance/i,
-  /anjuna(?:beats|deep)?/i,
-  /above\s*&\s*beyond/i,
-  /group\s+therapy/i,
-  /armada/i,
-  /a\s+state\s+of\s+trance/i,
-  /\basot\b/i,
-  /dreamstate/i,
-  /black\s+hole/i,
-  /fsoe/i,
-  /future\s+sound\s+of\s+egypt/i,
-  /enhanced/i,
-  /pure\s+trance/i,
-  /armin\s+van\s+buuren/i,
-  /paul\s+van\s+dyk/i,
-  /ferry\s+corsten/i,
-  /solarstone/i,
-  /dash\s+berlin/i,
-  /aly\s*&\s*fila/i,
-  /giuseppe\s+ottaviani/i,
-  /john\s+o'callaghan/i,
-  /bryan\s+kearney/i,
-  /cosmic\s+gate/i,
-  /orkidea/i,
-  /chicane/i,
-  /ti[eë]sto/i,
-];
+import { classifyTranceScope, type EditorialScope } from "@/lib/trance-relevance";
 
 const socialNewsPatterns = [
   /announce[sd]?/i,
@@ -107,7 +76,7 @@ const funRadarPatterns = [
   /unexpected|surprise|strange|weird/i,
   /interview/i,
   /producer/i,
-  /synth|plugin|studio|gear|lab/i,
+  /synth|cs-80|plugin|studio|gear|lab/i,
   /birthday|turns?\s+\d+/i,
   /pride|community|culture/i,
   /review/i,
@@ -134,9 +103,20 @@ function itemText(item: FeedItem) {
   return `${item.title}\n${item.url}\n${item.excerpt}`;
 }
 
+function scopeForItem(
+  item: FeedItem,
+  source?: { name: string; type?: string },
+): EditorialScope {
+  return classifyTranceScope({
+    title: item.title,
+    url: item.url,
+    rawExcerpt: item.excerpt,
+    source,
+  });
+}
+
 export function isTranceRelevantItem(item: FeedItem) {
-  const text = itemText(item);
-  return tranceSignalPatterns.some((pattern) => pattern.test(text));
+  return scopeForItem(item) === "CORE";
 }
 
 export function isSocialNewsItem(item: FeedItem) {
@@ -144,17 +124,31 @@ export function isSocialNewsItem(item: FeedItem) {
   return socialNewsPatterns.some((pattern) => pattern.test(text));
 }
 
-export function filterGenericEdmItems(items: FeedItem[]) {
-  return items.filter(isTranceRelevantItem);
+export function filterCoreTranceItems(
+  items: FeedItem[],
+  source?: { name: string; type?: string },
+) {
+  return items.filter((item) => scopeForItem(item, source) === "CORE");
 }
 
-export function filterLabelRadarItems(items: FeedItem[]) {
+export function filterGenericEdmItems(
+  items: FeedItem[],
+  source?: { name: string; type?: string },
+) {
+  return filterCoreTranceItems(items, source);
+}
+
+export function filterLabelRadarItems(
+  items: FeedItem[],
+  source?: { name: string; type?: string },
+) {
   return items.filter((item) => {
-    const text = itemText(item);
+    const text = `${source?.name ?? ""}\n${itemText(item)}`;
     if (lowSignalVideoPatterns.some((pattern) => pattern.test(text))) {
       return false;
     }
     return (
+      scopeForItem(item, source) === "CORE" &&
       labelRadarPatterns.some((pattern) => pattern.test(text)) &&
       (featureRadarPatterns.some((pattern) => pattern.test(text)) ||
         isSocialNewsItem(item))
@@ -162,13 +156,19 @@ export function filterLabelRadarItems(items: FeedItem[]) {
   });
 }
 
-export function filterFunRadarItems(items: FeedItem[]) {
+export function filterFunRadarItems(
+  items: FeedItem[],
+  source?: { name: string; type?: string },
+) {
   return items.filter((item) => {
     const text = itemText(item);
     if (lowSignalVideoPatterns.some((pattern) => pattern.test(text))) {
       return false;
     }
-    return funRadarPatterns.some((pattern) => pattern.test(text));
+    return (
+      scopeForItem(item, source) !== "OFF_TOPIC" &&
+      funRadarPatterns.some((pattern) => pattern.test(text))
+    );
   });
 }
 
