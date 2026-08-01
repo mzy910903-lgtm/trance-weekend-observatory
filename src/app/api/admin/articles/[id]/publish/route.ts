@@ -27,6 +27,21 @@ function tagSlug(name: string) {
   return name.toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, "").trim().replace(/\s+/g, "-");
 }
 
+function adminRedirect(
+  request: Request,
+  returnTo: string,
+  params: Record<string, string>,
+) {
+  const path = returnTo.startsWith("/admin") ? returnTo : "/admin";
+  const url = new URL(path, request.url);
+
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+
+  return NextResponse.redirect(url, 303);
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -48,10 +63,9 @@ export async function POST(
   const returnTo = String(form.get("returnTo") || "/admin");
 
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "发布字段不完整或格式错误。" },
-      { status: 400 },
-    );
+    return adminRedirect(request, returnTo, {
+      publishError: "发布未完成：请检查标题、摘要、评分和标签是否已填写。",
+    });
   }
 
   const tagNames = parsed.data.tags
@@ -59,6 +73,12 @@ export async function POST(
     .map((tag) => tag.trim())
     .filter(Boolean)
     .slice(0, 10);
+
+  if (tagNames.length === 0) {
+    return adminRedirect(request, returnTo, {
+      publishError: "发布未完成：请至少保留一个标签。",
+    });
+  }
 
   const existingArticle = await prisma.article.findUnique({
     where: { id },
@@ -70,61 +90,65 @@ export async function POST(
   });
 
   if (!existingArticle?.sourceUrl) {
-    return NextResponse.json(
-      { error: "发布失败：缺少来源链接。" },
-      { status: 400 },
-    );
+    return adminRedirect(request, returnTo, {
+      publishError: "发布未完成：缺少原文来源链接。",
+    });
   }
 
-  await prisma.$transaction(async (tx) => {
-    const article = await tx.article.update({
-      where: { id },
-      data: {
-        title: parsed.data.title,
-        summary: parsed.data.summary,
-        fullSummary: parsed.data.fullSummary,
-        category: parsed.data.category,
-        importanceScore: parsed.data.importanceScore,
-        artistryScore: parsed.data.artistryScore,
-        humorScore: parsed.data.humorScore,
-        scoreExplanation: parsed.data.scoreExplanation,
-        aiComment: parsed.data.aiComment,
-        status: ArticleStatus.PUBLISHED,
-        sourcePublishedAt:
-          existingArticle.sourcePublishedAt ??
-          existingArticle.submission?.rawPublishedAt ??
-          null,
-        publishedAt: new Date(),
-      },
+  try {
+    await prisma.$transaction(async (tx) => {
+      const article = await tx.article.update({
+        where: { id },
+        data: {
+          title: parsed.data.title,
+          summary: parsed.data.summary,
+          fullSummary: parsed.data.fullSummary,
+          category: parsed.data.category,
+          importanceScore: parsed.data.importanceScore,
+          artistryScore: parsed.data.artistryScore,
+          humorScore: parsed.data.humorScore,
+          scoreExplanation: parsed.data.scoreExplanation,
+          aiComment: parsed.data.aiComment,
+          status: ArticleStatus.PUBLISHED,
+          sourcePublishedAt:
+            existingArticle.sourcePublishedAt ??
+            existingArticle.submission?.rawPublishedAt ??
+            null,
+          publishedAt: new Date(),
+        },
+      });
+
+      await tx.articleTag.deleteMany({ where: { articleId: article.id } });
+
+      for (const name of tagNames) {
+        const slug = tagSlug(name);
+        if (!slug) continue;
+
+        const tag = await tx.tag.upsert({
+          where: { slug },
+          update: { name },
+          create: { name, slug },
+        });
+
+        await tx.articleTag.create({
+          data: { articleId: article.id, tagId: tag.id },
+        });
+      }
+
+      if (article.submissionId) {
+        await tx.submission.update({
+          where: { id: article.submissionId },
+          data: { status: SubmissionStatus.PUBLISHED },
+        });
+      }
     });
+  } catch (error) {
+    console.error("Article publish failed", { articleId: id, error });
 
-    await tx.articleTag.deleteMany({ where: { articleId: article.id } });
+    return adminRedirect(request, returnTo, {
+      publishError: "发布未完成：数据库保存失败，请重试。",
+    });
+  }
 
-    for (const name of tagNames) {
-      const slug = tagSlug(name);
-      if (!slug) continue;
-
-      const tag = await tx.tag.upsert({
-        where: { slug },
-        update: { name },
-        create: { name, slug },
-      });
-
-      await tx.articleTag.create({
-        data: { articleId: article.id, tagId: tag.id },
-      });
-    }
-
-    if (article.submissionId) {
-      await tx.submission.update({
-        where: { id: article.submissionId },
-        data: { status: SubmissionStatus.PUBLISHED },
-      });
-    }
-  });
-
-  return NextResponse.redirect(
-    new URL(returnTo.startsWith("/admin") ? returnTo : "/admin", request.url),
-    303,
-  );
+  return adminRedirect(request, returnTo, { published: "1" });
 }

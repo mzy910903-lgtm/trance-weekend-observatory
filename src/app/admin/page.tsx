@@ -726,10 +726,21 @@ export default async function AdminPage({
     cleanup?: string;
     refreshed?: string;
     refreshError?: string;
+    published?: string;
+    publishError?: string;
   }>;
 }) {
-  const { status, tab, scan, scanError, cleanup, refreshed, refreshError } =
-    await searchParams;
+  const {
+    status,
+    tab,
+    scan,
+    scanError,
+    cleanup,
+    refreshed,
+    refreshError,
+    published,
+    publishError,
+  } = await searchParams;
   const activeTab = tab === "sources" ? "sources" : "queue";
   const activeStatus = statusFilters.some((item) => item.key === status)
     ? status
@@ -806,6 +817,16 @@ export default async function AdminPage({
       {refreshError ? (
         <div className="mt-5 rounded border border-yellow-300/20 bg-yellow-300/10 p-4 text-sm text-yellow-100">
           {decodeURIComponent(refreshError)}
+        </div>
+      ) : null}
+      {published ? (
+        <div className="mt-5 rounded border border-emerald-300/20 bg-emerald-300/10 p-4 text-sm text-emerald-100">
+          已发布。资讯现已进入前台，并会按原文发布时间排序。
+        </div>
+      ) : null}
+      {publishError ? (
+        <div className="mt-5 rounded border border-red-300/20 bg-red-950/30 p-4 text-sm text-red-100">
+          {decodeURIComponent(publishError)}
         </div>
       ) : null}
 
