@@ -58,6 +58,12 @@ const defaultSources = [
     type: "RSS",
   },
   {
+    name: "Trance Attack",
+    url: "https://www.tranceattack.net/",
+    feedUrl: "https://www.tranceattack.net/feed/",
+    type: "RSS",
+  },
+  {
     name: "Trancentral",
     url: "https://www.trancentral.tv/",
     feedUrl: "https://www.trancentral.tv/feed/",
