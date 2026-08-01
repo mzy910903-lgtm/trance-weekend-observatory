@@ -674,10 +674,10 @@ function QueuePanel({
             <button
               formAction="/api/admin/submissions/refresh-core"
               name="maxSourceAgeDays"
-              value="14"
+              value="30"
               className="rounded-full border border-amber-300/40 px-4 py-2 text-sm text-amber-100 transition hover:border-amber-300 hover:bg-amber-300 hover:text-black"
             >
-              一次性补抓近 14 天
+              一次性补抓近 30 天
             </button>
             <button
               formAction="/api/admin/submissions/cleanup-off-topic"

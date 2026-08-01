@@ -212,8 +212,15 @@ export async function cleanupOutOfScopeCandidates() {
   };
 }
 
-export async function runAutoDraft(options?: { maxSourceAgeDays?: number }) {
-  const limit = parseAutoDraftLimit();
+export async function runAutoDraft(options?: {
+  maxSourceAgeDays?: number;
+  limit?: number;
+}) {
+  const requestedLimit = options?.limit;
+  const limit =
+    requestedLimit === undefined
+      ? parseAutoDraftLimit()
+      : Math.min(Math.max(requestedLimit, 1), MAX_AUTO_DRAFT_LIMIT);
   const minCandidates = parseAutoDraftMinCandidates(limit);
   const cleanup = await cleanupExpiredDrafts();
   const staleCleanup = await cleanupStaleDrafts(options?.maxSourceAgeDays);

@@ -38,6 +38,13 @@ assert.equal(
   }),
   "CONTEXT",
 );
+assert.equal(
+  classifyTranceScope({
+    title: "Kraftwerk retrospective traces the roots of rave culture",
+    url: "https://example.com/kraftwerk-retrospective",
+  }),
+  "CONTEXT",
+);
 
 assert.deepEqual(
   filterGenericEdmItems(

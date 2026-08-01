@@ -59,6 +59,13 @@ const adjacentCulturePeoplePatterns = [
   /\bvangelis\b/i,
   /\bjean-michel\s+jarre\b/i,
   /\btom\s+oberheim\b/i,
+  /\bkraftwerk\b/i,
+  /\bunderworld\b/i,
+  /\borbital\b/i,
+  /\bthe\s+orb\b/i,
+  /\bthe\s+prodigy\b/i,
+  /\bchemical\s+brothers\b/i,
+  /\b808\s+state\b/i,
 ];
 
 const adjacentCultureStoryPatterns = [
@@ -71,6 +78,15 @@ const adjacentCultureStoryPatterns = [
   /\blegacy\b/i,
   /\bhistory\b/i,
   /\bclassic\b/i,
+  /\binterview\b/i,
+  /\bretrospective\b/i,
+  /\bdocumentary\b/i,
+  /\bexhibition\b/i,
+  /\barchive\b/i,
+  /\banniversary\b/i,
+  /\breissue\b/i,
+  /\brave\s+culture\b/i,
+  /\bclub\s+culture\b/i,
   /合成器|模拟|制作史|工作室|经典|遗产|历史/,
 ];
 

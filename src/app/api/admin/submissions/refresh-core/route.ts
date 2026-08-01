@@ -10,8 +10,14 @@ export async function POST(request: Request) {
     String(form.get("maxSourceAgeDays") ?? ""),
     10,
   );
-  const maxSourceAgeDays = requestedAgeDays === 14 ? 14 : undefined;
-  const result = await runAutoDraft({ maxSourceAgeDays });
+  const maxSourceAgeDays =
+    requestedAgeDays === 14 || requestedAgeDays === 30
+      ? requestedAgeDays
+      : undefined;
+  const result = await runAutoDraft({
+    maxSourceAgeDays,
+    limit: maxSourceAgeDays === 30 ? 30 : undefined,
+  });
   const url = new URL("/admin", request.url);
   url.searchParams.set("status", "ANALYZED");
 
