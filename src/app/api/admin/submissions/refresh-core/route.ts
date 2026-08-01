@@ -5,12 +5,22 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
-  const result = await runAutoDraft();
+  const form = await request.formData();
+  const requestedAgeDays = Number.parseInt(
+    String(form.get("maxSourceAgeDays") ?? ""),
+    10,
+  );
+  const maxSourceAgeDays = requestedAgeDays === 14 ? 14 : undefined;
+  const result = await runAutoDraft({ maxSourceAgeDays });
   const url = new URL("/admin", request.url);
   url.searchParams.set("status", "ANALYZED");
 
   if (result.analyzed > 0) {
     url.searchParams.set("refreshed", String(result.analyzed));
+  }
+
+  if (maxSourceAgeDays) {
+    url.searchParams.set("backfillDays", String(maxSourceAgeDays));
   }
 
   if (!result.ok) {

@@ -76,7 +76,7 @@ async function cleanupExpiredDrafts() {
   return { retentionDays, archived: expiredDrafts.length };
 }
 
-async function cleanupStaleDrafts() {
+async function cleanupStaleDrafts(maxSourceAgeDays?: number) {
   const drafts = await prisma.article.findMany({
     where: {
       status: ArticleStatus.DRAFT,
@@ -102,14 +102,18 @@ async function cleanupStaleDrafts() {
 
   const staleDrafts = drafts
     .map((draft) => {
-      const decision = judgeNewsRecency({
-        title: draft.submission?.rawTitle || draft.title,
-        url: draft.sourceUrl,
-        rawExcerpt: draft.submission?.rawExcerpt || draft.summary,
-        note: draft.submission?.note,
-        publishedAt: draft.submission?.rawPublishedAt,
-        discoveredAt: draft.submission?.discoveredAt,
-      });
+      const decision = judgeNewsRecency(
+        {
+          title: draft.submission?.rawTitle || draft.title,
+          url: draft.sourceUrl,
+          rawExcerpt: draft.submission?.rawExcerpt || draft.summary,
+          note: draft.submission?.note,
+          publishedAt: draft.submission?.rawPublishedAt,
+          discoveredAt: draft.submission?.discoveredAt,
+        },
+        new Date(),
+        maxSourceAgeDays,
+      );
 
       return { ...draft, decision };
     })
@@ -212,7 +216,7 @@ export async function runAutoDraft(options?: { maxSourceAgeDays?: number }) {
   const limit = parseAutoDraftLimit();
   const minCandidates = parseAutoDraftMinCandidates(limit);
   const cleanup = await cleanupExpiredDrafts();
-  const staleCleanup = await cleanupStaleDrafts();
+  const staleCleanup = await cleanupStaleDrafts(options?.maxSourceAgeDays);
   const scopeCleanup = await cleanupOutOfScopeCandidates();
   const sources = await prisma.source.findMany({
     where: { enabled: true, feedUrl: { not: null } },

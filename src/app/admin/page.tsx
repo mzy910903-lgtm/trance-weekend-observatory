@@ -672,6 +672,14 @@ function QueuePanel({
               刷新传思主线候选
             </button>
             <button
+              formAction="/api/admin/submissions/refresh-core"
+              name="maxSourceAgeDays"
+              value="14"
+              className="rounded-full border border-amber-300/40 px-4 py-2 text-sm text-amber-100 transition hover:border-amber-300 hover:bg-amber-300 hover:text-black"
+            >
+              一次性补抓近 14 天
+            </button>
+            <button
               formAction="/api/admin/submissions/cleanup-off-topic"
               className="rounded-full border border-red-300/30 px-4 py-2 text-sm text-red-100 transition hover:border-red-300 hover:bg-red-300 hover:text-black"
             >
@@ -726,6 +734,7 @@ export default async function AdminPage({
     cleanup?: string;
     refreshed?: string;
     refreshError?: string;
+    backfillDays?: string;
     published?: string;
     publishError?: string;
   }>;
@@ -738,6 +747,7 @@ export default async function AdminPage({
     cleanup,
     refreshed,
     refreshError,
+    backfillDays,
     published,
     publishError,
   } = await searchParams;
@@ -811,7 +821,10 @@ export default async function AdminPage({
       ) : null}
       {refreshed ? (
         <div className="mt-5 rounded border border-sky-300/20 bg-sky-300/10 p-4 text-sm text-sky-100">
-          主线候选刷新完成：新增 {refreshed} 条已分析草稿。普通发歌和低信号节目已自动跳过。
+          {backfillDays
+            ? `近 ${backfillDays} 天主线补抓完成：新增 ${refreshed} 条已分析草稿。`
+            : `主线候选刷新完成：新增 ${refreshed} 条已分析草稿。`}
+          普通发歌和低信号节目已自动跳过。
         </div>
       ) : null}
       {refreshError ? (

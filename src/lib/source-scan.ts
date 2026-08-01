@@ -141,12 +141,35 @@ export async function scanSource(
         continue;
       }
 
-      const exists = await prisma.submission.findFirst({
+      const existing = await prisma.submission.findFirst({
         where: { url: item.url },
-        select: { id: true },
+        select: { id: true, status: true },
       });
 
-      if (exists) continue;
+      if (existing) {
+        const isExtendedBackfill = (options?.maxSourceAgeDays ?? 7) > 7;
+
+        if (isExtendedBackfill && existing.status === SubmissionStatus.REJECTED) {
+          await prisma.submission.update({
+            where: { id: existing.id },
+            data: {
+              nickname: source.name,
+              note: item.excerpt
+                ? `来源扫描发现：${item.title}\n${item.excerpt}`
+                : `来源扫描发现：${item.title}`,
+              status: SubmissionStatus.PENDING,
+              rawTitle: item.title,
+              rawExcerpt: item.excerpt,
+              rawPublishedAt: item.publishedAt,
+              discoveredAt: item.publishedAt ?? new Date(),
+              errorMessage: null,
+            },
+          });
+          created += 1;
+        }
+
+        continue;
+      }
 
       await prisma.submission.create({
         data: {
