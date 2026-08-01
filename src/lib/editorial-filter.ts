@@ -228,7 +228,11 @@ const funStoryPatterns = [
   /\bturns?\s+\d+\b/i,
   /\bpride\b/i,
   /\bculture\b/i,
+  /\b(?:copyright|lawsuit|legal|court|policy|platform)\b/i,
+  /\b(?:documentary|reissue|shutdown|acquir(?:e|ed|es)|obituary)\b/i,
+  /\b(?:dies|death)\b/i,
   /争议|回应|指控|事故|意外|奇怪|惊喜|合成器|插件|设备|工作室|制作人|社区|文化/,
+  /版权|诉讼|法律|平台|纪录片|再版|关闭|收购|去世/,
 ];
 
 function normalizedText(candidate: Candidate) {

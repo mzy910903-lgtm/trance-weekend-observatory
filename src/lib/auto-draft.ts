@@ -29,8 +29,17 @@ function parseAutoDraftMinCandidates(limit: number) {
   return Math.min(Math.max(value, 0), limit);
 }
 
-export function calculateContextLimit(limit: number, analyzedCore: number) {
-  return Math.min(Math.floor(limit * 0.2), Math.floor(analyzedCore / 4));
+export function calculateContextLimit(
+  limit: number,
+  analyzedCore: number,
+  maxContextRatio = 0.2,
+) {
+  const ratio = Math.min(Math.max(maxContextRatio, 0), 0.5);
+  const pairedCoreLimit = Math.floor(
+    (analyzedCore * ratio) / Math.max(1 - ratio, Number.EPSILON),
+  );
+
+  return Math.min(Math.floor(limit * ratio), pairedCoreLimit);
 }
 
 async function cleanupExpiredDrafts() {
@@ -215,6 +224,7 @@ export async function cleanupOutOfScopeCandidates() {
 export async function runAutoDraft(options?: {
   maxSourceAgeDays?: number;
   limit?: number;
+  maxContextRatio?: number;
 }) {
   const requestedLimit = options?.limit;
   const limit =
@@ -364,7 +374,11 @@ export async function runAutoDraft(options?: {
   }
 
   const analyzedCore = await analyzeCandidates(coreCandidates, limit);
-  const contextLimit = calculateContextLimit(limit, analyzedCore);
+  const contextLimit = calculateContextLimit(
+    limit,
+    analyzedCore,
+    options?.maxContextRatio,
+  );
   const analyzedContext = await analyzeCandidates(contextCandidates, contextLimit);
 
   return {

@@ -17,6 +17,7 @@ export async function POST(request: Request) {
   const result = await runAutoDraft({
     maxSourceAgeDays,
     limit: maxSourceAgeDays === 30 ? 30 : undefined,
+    maxContextRatio: maxSourceAgeDays === 30 ? 0.4 : undefined,
   });
   const url = new URL("/admin", request.url);
   url.searchParams.set("status", "ANALYZED");

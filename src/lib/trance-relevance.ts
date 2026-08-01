@@ -66,6 +66,11 @@ const adjacentCulturePeoplePatterns = [
   /\bthe\s+prodigy\b/i,
   /\bchemical\s+brothers\b/i,
   /\b808\s+state\b/i,
+  /\bdaft\s+punk\b/i,
+  /\bmoby\b/i,
+  /\bkavinsky\b/i,
+  /\baphex\s+twin\b/i,
+  /\bpatrick\s+gleeson\b/i,
 ];
 
 const adjacentCultureStoryPatterns = [
@@ -88,6 +93,19 @@ const adjacentCultureStoryPatterns = [
   /\brave\s+culture\b/i,
   /\bclub\s+culture\b/i,
   /合成器|模拟|制作史|工作室|经典|遗产|历史/,
+];
+
+const adjacentIndustryStoryPatterns = [
+  /\b(?:copyright|lawsuit|legal|court|policy|platform)\b/i,
+  /\b(?:documentary|rave\s+culture|club\s+culture|love\s+parade)\b/i,
+  /\b(?:acquire[sd]?|shutdown|shuts?\s+down|reissue|obituary|dies|death)\b/i,
+  /版权|诉讼|法律|平台|纪录片|锐舞文化|爱心大游行|收购|关闭|再版|去世/,
+];
+
+const adjacentIndustryRejectPatterns = [
+  /\b(?:review|versus|best\s+new|plugins?|monitor|headphones?)\b/i,
+  /\b(?:single|track|remix|out\s+now|listen\s+now)\b/i,
+  /评测|插件|监听|耳机|单曲|混音|新歌发布/,
 ];
 
 function matchesAny(patterns: RegExp[], value: string) {
@@ -134,6 +152,15 @@ export function classifyTranceScope(candidate: RelevanceCandidate): EditorialSco
   if (
     matchesAny(adjacentCulturePeoplePatterns, content) &&
     matchesAny(adjacentCultureStoryPatterns, content)
+  ) {
+    return "CONTEXT";
+  }
+
+  const sourceType = candidate.source?.type ?? "";
+  if (
+    sourceType === "FUN_RADAR_RSS" &&
+    matchesAny(adjacentIndustryStoryPatterns, content) &&
+    !matchesAny(adjacentIndustryRejectPatterns, content)
   ) {
     return "CONTEXT";
   }

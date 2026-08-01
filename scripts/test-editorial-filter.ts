@@ -40,6 +40,14 @@ assert.equal(
 );
 assert.equal(
   classifyTranceScope({
+    title: "SoundCloud acquires key assets after Nina Protocol shutdown",
+    url: "https://example.com/soundcloud-nina",
+    source: funSource,
+  }),
+  "CONTEXT",
+);
+assert.equal(
+  classifyTranceScope({
     title: "Kraftwerk retrospective traces the roots of rave culture",
     url: "https://example.com/kraftwerk-retrospective",
   }),
@@ -112,5 +120,6 @@ assert.equal(
 assert.equal(calculateContextLimit(20, 16), 4);
 assert.equal(calculateContextLimit(10, 8), 2);
 assert.equal(calculateContextLimit(20, 3), 0);
+assert.equal(calculateContextLimit(30, 10, 0.4), 6);
 
 console.log("Editorial relevance checks passed.");
