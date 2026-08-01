@@ -118,8 +118,11 @@ function scopeForItem(
   });
 }
 
-export function isTranceRelevantItem(item: FeedItem) {
-  return scopeForItem(item) === "CORE";
+export function isTranceRelevantItem(
+  item: FeedItem,
+  source?: { name: string; type?: string },
+) {
+  return scopeForItem(item, source) === "CORE";
 }
 
 export function isSocialNewsItem(item: FeedItem) {
@@ -175,10 +178,13 @@ export function filterFunRadarItems(
   });
 }
 
-export function filterYouTubeItems(items: FeedItem[]) {
+export function filterYouTubeItems(
+  items: FeedItem[],
+  source?: { name: string; type?: string },
+) {
   return items.filter((item) => {
     const text = itemText(item);
-    if (!isTranceRelevantItem(item)) return false;
+    if (!isTranceRelevantItem(item, source)) return false;
     if (lowSignalVideoPatterns.some((pattern) => pattern.test(text))) {
       return false;
     }
@@ -186,6 +192,11 @@ export function filterYouTubeItems(items: FeedItem[]) {
   });
 }
 
-export function filterInstagramItems(items: FeedItem[]) {
-  return items.filter((item) => isTranceRelevantItem(item) && isSocialNewsItem(item));
+export function filterInstagramItems(
+  items: FeedItem[],
+  source?: { name: string; type?: string },
+) {
+  return items.filter(
+    (item) => isTranceRelevantItem(item, source) && isSocialNewsItem(item),
+  );
 }

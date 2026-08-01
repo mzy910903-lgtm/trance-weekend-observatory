@@ -4,11 +4,16 @@ import { judgeAutoDraftCandidate } from "../src/lib/editorial-filter";
 import {
   filterFunRadarItems,
   filterGenericEdmItems,
+  filterYouTubeItems,
 } from "../src/lib/source-filters";
 import { classifyTranceScope } from "../src/lib/trance-relevance";
 
 const genericSource = { name: "We Rave You", type: "GENERIC_EDM_RSS" };
 const funSource = { name: "MusicTech Fun Radar", type: "FUN_RADAR_RSS" };
+const artistChannel = {
+  name: "Above & Beyond 官方频道动态",
+  type: "YOUTUBE_CHANNEL_RSS",
+};
 
 assert.equal(
   classifyTranceScope({
@@ -94,6 +99,27 @@ assert.deepEqual(
     funSource,
   ).map((item) => item.url),
   ["https://example.com/vangelis"],
+);
+
+assert.deepEqual(
+  filterYouTubeItems(
+    [
+      {
+        title: "Above & Beyond announce a new tour date",
+        url: "https://youtube.example.com/tour",
+        publishedAt: new Date(),
+        excerpt: "",
+      },
+      {
+        title: "Above & Beyond - Full Set from the festival",
+        url: "https://youtube.example.com/full-set",
+        publishedAt: new Date(),
+        excerpt: "",
+      },
+    ],
+    artistChannel,
+  ).map((item) => item.url),
+  ["https://youtube.example.com/tour"],
 );
 
 assert.equal(

@@ -81,6 +81,41 @@ const defaultSources = [
     feedUrl: "https://weraveyou.com/feed/",
     type: "FUN_RADAR_RSS",
   },
+  {
+    name: "Above & Beyond 官方频道动态",
+    url: "https://www.youtube.com/@aboveandbeyond",
+    feedUrl:
+      "https://www.youtube.com/feeds/videos.xml?channel_id=UCVE-ybBDg3UHSUylEVdPAsw",
+    type: "YOUTUBE_CHANNEL_RSS",
+  },
+  {
+    name: "Anjunadeep 官方频道动态",
+    url: "https://www.youtube.com/@anjunadeep",
+    feedUrl:
+      "https://www.youtube.com/feeds/videos.xml?channel_id=UCbDgBFAketcO26wz-pR6OKA",
+    type: "YOUTUBE_CHANNEL_RSS",
+  },
+  {
+    name: "Anjunachill 官方频道动态",
+    url: "https://www.youtube.com/@anjunachill",
+    feedUrl:
+      "https://www.youtube.com/feeds/videos.xml?channel_id=UCV8pMjLasWLdoANBOICgahw",
+    type: "YOUTUBE_CHANNEL_RSS",
+  },
+  {
+    name: "Instagram #trancefamily 社媒雷达（需 API）",
+    url: "https://www.instagram.com/explore/tags/trancefamily/",
+    feedUrl: "https://www.instagram.com/explore/tags/trancefamily/",
+    type: "INSTAGRAM_HASHTAG",
+    enabled: false,
+  },
+  {
+    name: "Instagram #astateoftrance 社媒雷达（需 API）",
+    url: "https://www.instagram.com/explore/tags/astateoftrance/",
+    feedUrl: "https://www.instagram.com/explore/tags/astateoftrance/",
+    type: "INSTAGRAM_HASHTAG",
+    enabled: false,
+  },
 ];
 
 async function main() {
@@ -92,9 +127,9 @@ async function main() {
           name: source.name,
           feedUrl: source.feedUrl,
           type: source.type,
-          enabled: true,
+          enabled: source.enabled ?? true,
         },
-        create: { ...source, enabled: true },
+        create: { ...source, enabled: source.enabled ?? true },
       }),
     ),
   );

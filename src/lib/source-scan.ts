@@ -85,7 +85,7 @@ async function fetchSourceItems(source: ScanSource) {
   }
 
   if (source.type === SourceType.YOUTUBE_CHANNEL_RSS) {
-    const items = filterYouTubeItems(feed.items);
+    const items = filterYouTubeItems(feed.items, source);
     return {
       ...feed,
       items,

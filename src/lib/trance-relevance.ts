@@ -51,6 +51,12 @@ const trustedCoreSourcePatterns = [
   /trance\s+radar/i,
   /pure\s+trance/i,
   /a\s+state\s+of\s+trance/i,
+  /above\s*&\s*beyond/i,
+  /anjuna/i,
+  /armada/i,
+  /black\s+hole/i,
+  /dreamstate/i,
+  /future\s+sound\s+of\s+egypt/i,
   /trancentral/i,
   /oz\s+edm\s+trance/i,
 ];

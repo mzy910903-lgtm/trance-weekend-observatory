@@ -114,6 +114,9 @@ export async function fetchInstagramHashtagRadar(
 
   return {
     title: `Instagram #${hashtag} Radar`,
-    items: filterInstagramItems(items).slice(0, 30),
+    items: filterInstagramItems(items, {
+      name: `Instagram #${hashtag} Radar`,
+      type: "INSTAGRAM_HASHTAG",
+    }).slice(0, 30),
   };
 }

@@ -85,8 +85,8 @@ INSTAGRAM_GRAPH_API_VERSION="v21.0"
 - 泛 EDM Radar：EDMTunes、EDM Life、Dancing Astronaut 等会先按 Trance / Anjuna / ASOT / Dreamstate / Armada / Black Hole / FSOE / Enhanced / 关键艺人词过滤。
 - 厂牌/节目源：Pure Trance、A State of Trance、Enhanced Music 等能提供 RSS 的来源可直接扫描；口碑厂牌雷达会优先收厂牌新章节、艺人专题、幕后故事与周年内容，不把普通发歌当新闻。
 - 趣闻雷达：We Rave You、MusicTech、Electronic Groove 等补充争议回应、现场文化、制作人故事、合成器/制作工具逸闻与社区话题，仍需人工审核发布。
-- YouTube 频道 RSS：需要真实 `channel_id`，格式是 `https://www.youtube.com/feeds/videos.xml?channel_id=...`；当前默认停用未验证频道，避免扫描全部超时。
-- Instagram hashtag radar：仅走官方 Graph API hashtag recent media，结果只进 pending 线索，不自动发布；不做网页抓取和模拟登录。
+- YouTube 频道 RSS：已接入 Above & Beyond、Anjunadeep、Anjunachill 的官方动态。只收公告、阵容、巡演、预告、现场回顾和访谈，full set、mix、单曲视频会被过滤。
+- Instagram hashtag radar：已预置关闭状态的 `#trancefamily`、`#astateoftrance` 雷达；填好官方 Graph API 凭据后在后台启用。结果只进 pending 线索，不自动发布；不做网页抓取、模拟登录或个人主页爬取。
 
 Beatport 主站发行页当前会对服务端抓取返回 403，本项目不绕过限制；如需抓 Beatport releases/charts，后续应接官方 API。
 
