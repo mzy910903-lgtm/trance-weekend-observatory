@@ -1,6 +1,6 @@
 export const ADMIN_COOKIE_NAME = "tw_admin_session";
 
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
 function getAdminPassword() {
   if (process.env.ADMIN_PASSWORD) return process.env.ADMIN_PASSWORD;
@@ -73,4 +73,5 @@ export const adminCookieOptions = {
   sameSite: "lax" as const,
   path: "/",
   maxAge: SESSION_MAX_AGE_SECONDS,
+  priority: "high" as const,
 };

@@ -12,7 +12,7 @@ export default async function AdminLoginPage({
       </p>
       <h2 className="mt-4 text-5xl font-semibold text-white">后台登录</h2>
       <p className="mt-5 text-sm leading-7 text-zinc-400">
-        请输入管理员口令。登录后才能访问审核台和管理接口。
+        请输入管理员口令。登录后本设备会默认保持 30 天登录状态，除非主动退出。
       </p>
 
       {error ? (
