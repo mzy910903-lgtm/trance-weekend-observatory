@@ -43,6 +43,7 @@ AI_MODEL="deepseek-v4-flash"
 ADMIN_PASSWORD="your-admin-password"
 ADMIN_COOKIE_SECRET="a-long-random-secret"
 CRON_SECRET="a-long-random-cron-secret"
+OBSERVATORY_DASHBOARD_TOKEN="a-shared-secret-for-the-main-dashboard"
 AUTO_DRAFT_LIMIT="20"
 AUTO_DRAFT_MIN_CANDIDATES="10"
 AUTO_DRAFT_RETENTION_DAYS="7"
@@ -52,7 +53,7 @@ INSTAGRAM_USER_ID=""
 INSTAGRAM_GRAPH_API_VERSION="v21.0"
 ```
 
-`AI_PROVIDER` 推荐用 `deepseek` 做资讯翻译、摘要和标签，性价比较高；也可以设为 `openai`。`AI_API_KEY` 是通用 key；旧的 `OPENAI_API_KEY` 仍兼容。`ADMIN_PASSWORD` 用于后台登录，`ADMIN_COOKIE_SECRET` 用于签名 httpOnly cookie，`CRON_SECRET` 用于保护定时任务接口。`AUTO_DRAFT_LIMIT` 控制每日候选上限，默认 20；`AUTO_DRAFT_MIN_CANDIDATES` 是每日候选目标，默认 10。`AUTO_DRAFT_RETENTION_DAYS` 可选，默认 7，超过天数仍未发布的草稿会自动移出候选池。`AUTO_DRAFT_MAX_SOURCE_AGE_DAYS` 可选，默认 7，超过该时效窗口的来源文章会被判定为旧闻并拒绝进入候选；已发布文章不受这个窗口影响。口碑厂牌与趣闻雷达只改变题材优先级，不放宽 7 天时效。Instagram radar 需要官方 Graph API token；未配置时会跳过，不影响其它来源。
+`AI_PROVIDER` 推荐用 `deepseek` 做资讯翻译、摘要和标签，性价比较高；也可以设为 `openai`。`AI_API_KEY` 是通用 key；旧的 `OPENAI_API_KEY` 仍兼容。`ADMIN_PASSWORD` 用于后台登录，`ADMIN_COOKIE_SECRET` 用于签名 httpOnly cookie，`CRON_SECRET` 用于保护定时任务接口。`OBSERVATORY_DASHBOARD_TOKEN` 是给 `www.tranceweekend.com/dashboard` 读取运营汇总的共享口令，必须只配置在部署平台环境变量中。`AUTO_DRAFT_LIMIT` 控制每日候选上限，默认 20；`AUTO_DRAFT_MIN_CANDIDATES` 是每日候选目标，默认 10。`AUTO_DRAFT_RETENTION_DAYS` 可选，默认 7，超过天数仍未发布的草稿会自动移出候选池。`AUTO_DRAFT_MAX_SOURCE_AGE_DAYS` 可选，默认 7，超过该时效窗口的来源文章会被判定为旧闻并拒绝进入候选；已发布文章不受这个窗口影响。口碑厂牌与趣闻雷达只改变题材优先级，不放宽 7 天时效。Instagram radar 需要官方 Graph API token；未配置时会跳过，不影响其它来源。
 
 ## 后台流程
 
@@ -125,7 +126,7 @@ curl "http://localhost:3001/api/cron/auto-draft?secret=$CRON_SECRET"
 生产环境使用 PostgreSQL，不要把本地 SQLite 文件部署到 Vercel。
 
 1. 将仓库推送到私有 GitHub 仓库，并在 Vercel 导入该仓库。
-2. 在 Vercel 的 Production 环境变量中填写 `DATABASE_URL`、`DIRECT_URL`、`AI_PROVIDER`、`AI_API_KEY`、`AI_BASE_URL`、`AI_MODEL`、`ADMIN_PASSWORD`、`ADMIN_COOKIE_SECRET`、`CRON_SECRET`、`AUTO_DRAFT_LIMIT=20`、`AUTO_DRAFT_MIN_CANDIDATES=10`、`AUTO_DRAFT_RETENTION_DAYS=7` 和 `AUTO_DRAFT_MAX_SOURCE_AGE_DAYS=7`。
+2. 在 Vercel 的 Production 环境变量中填写 `DATABASE_URL`、`DIRECT_URL`、`AI_PROVIDER`、`AI_API_KEY`、`AI_BASE_URL`、`AI_MODEL`、`ADMIN_PASSWORD`、`ADMIN_COOKIE_SECRET`、`CRON_SECRET`、`OBSERVATORY_DASHBOARD_TOKEN`、`AUTO_DRAFT_LIMIT=20`、`AUTO_DRAFT_MIN_CANDIDATES=10`、`AUTO_DRAFT_RETENTION_DAYS=7` 和 `AUTO_DRAFT_MAX_SOURCE_AGE_DAYS=7`。
 3. `DATABASE_URL` 使用 Supavisor transaction pooler（`6543`，运行期访问）；`DIRECT_URL` 使用 session pooler（`5432`，供 Prisma 同步 schema）。Vercel 会使用 `npm run build:vercel`，在构建时同步空 Supabase 数据库表结构、生成 PostgreSQL Prisma Client、幂等写入默认内容源，再构建 Next.js。应用早期采用 `db push` 保持上线步骤轻量；后续引入正式 migration 后再切换为 `prisma migrate deploy`。
 4. `vercel.json` 会每天 UTC 01:00（北京时间约 09:00）调用自动草稿任务。任务只生成候选草稿，绝不自动发布。
    自动草稿路由配置为 60 秒，来源扫描并发执行，以适配 Vercel Hobby 的函数时限；分析仍逐条进行，避免对来源和 AI 服务造成突发压力。
