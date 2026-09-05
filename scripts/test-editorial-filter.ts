@@ -10,6 +10,17 @@ import { classifyTranceScope } from "../src/lib/trance-relevance";
 
 const genericSource = { name: "We Rave You", type: "GENERIC_EDM_RSS" };
 const funSource = { name: "MusicTech Fun Radar", type: "FUN_RADAR_RSS" };
+for (const [title, excerpt, accepted] of [
+  ["Mike Rish [Interview + Premiere]", "Progressive house producer discusses founding a label and creative decisions.", true],
+  ["John Digweed in conversation", "The DJ discusses Bedrock and club culture.", true],
+  ["Premiere: Guy J - New Track", "Progressive house single out now.", false],
+  ["Interview: a Future Rave producer", "Festival marketing campaign.", false],
+] as const) {
+  const candidate = { title, rawExcerpt: excerpt, url: "https://example.com/story", note: null, source: funSource };
+  assert.equal(judgeAutoDraftCandidate(candidate).accepted, accepted, title);
+  if (accepted) assert.equal(classifyTranceScope(candidate), "CONTEXT");
+  assert.equal(filterFunRadarItems([{ title, excerpt, url: candidate.url, publishedAt: new Date() }], funSource).length, accepted ? 1 : 0, title);
+}
 const artistChannel = {
   name: "Above & Beyond 官方频道动态",
   type: "YOUTUBE_CHANNEL_RSS",

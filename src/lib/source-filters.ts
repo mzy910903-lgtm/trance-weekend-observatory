@@ -1,4 +1,5 @@
 import type { FeedItem } from "@/lib/feeds";
+import { isProgressiveDepth } from "@/lib/progressive-depth";
 import { classifyTranceScope, type EditorialScope } from "@/lib/trance-relevance";
 
 const socialNewsPatterns = [
@@ -168,6 +169,7 @@ export function filterFunRadarItems(
 ) {
   return items.filter((item) => {
     const text = itemText(item);
+    if (isProgressiveDepth({ title: item.title, rawExcerpt: item.excerpt })) return true;
     if (lowSignalVideoPatterns.some((pattern) => pattern.test(text))) {
       return false;
     }

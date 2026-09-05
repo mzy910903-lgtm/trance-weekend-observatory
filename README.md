@@ -68,6 +68,8 @@ INSTAGRAM_GRAPH_API_VERSION="v21.0"
 
 ## 内容源雷达
 
+Progressive House 深读订阅：Progressive Astronaut Interviews、Decoded Magazine Interviews、Electronic Groove Interviews & Features。相关艺人/厂牌与访谈、幕后、口述史等信号必须同时命中；纯 Premiere、发歌和周更不作为深读。非 Trance 深读使用相邻候选配额（最多 20%），继续遵守 7 天来源时效与人工发布。音视频访谈与付费长文暂不自动接入。
+
 后台 `/admin?tab=sources` 可以维护 RSS/Atom 来源：
 
 - 添加来源名称、主页 URL、RSS/Atom URL。

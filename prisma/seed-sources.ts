@@ -4,6 +4,24 @@ const prisma = new PrismaClient();
 
 const defaultSources = [
   {
+    name: "Progressive Astronaut Interviews",
+    url: "https://progressiveastronaut.com/category/interviews/",
+    feedUrl: "https://progressiveastronaut.com/category/interviews/feed/",
+    type: "FUN_RADAR_RSS",
+  },
+  {
+    name: "Decoded Magazine Interviews",
+    url: "https://www.decodedmagazine.com/category/news/interviews/",
+    feedUrl: "https://www.decodedmagazine.com/category/news/interviews/feed/",
+    type: "FUN_RADAR_RSS",
+  },
+  {
+    name: "Electronic Groove Interviews & Features",
+    url: "https://electronicgroove.com/category/interviews-features/",
+    feedUrl: "https://electronicgroove.com/category/interviews-features/feed/",
+    type: "FUN_RADAR_RSS",
+  },
+  {
     name: "A State of Trance Label Radar",
     url: "https://www.astateoftrance.com",
     feedUrl: "https://www.astateoftrance.com/feed/",

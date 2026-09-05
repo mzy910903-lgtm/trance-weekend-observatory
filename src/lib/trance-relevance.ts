@@ -1,3 +1,5 @@
+import { isProgressiveDepth } from "@/lib/progressive-depth";
+
 export type EditorialScope = "CORE" | "CONTEXT" | "OFF_TOPIC";
 
 type RelevanceCandidate = {
@@ -154,6 +156,8 @@ export function classifyTranceScope(candidate: RelevanceCandidate): EditorialSco
   if (matchesAny(coreTrancePatterns, content) || isTrustedCoreSource(candidate)) {
     return "CORE";
   }
+
+  if (isProgressiveDepth(candidate)) return "CONTEXT";
 
   if (
     matchesAny(adjacentCulturePeoplePatterns, content) &&

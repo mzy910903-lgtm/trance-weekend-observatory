@@ -15,6 +15,7 @@ export type EditorialDecision = {
 };
 
 import { classifyTranceScope } from "@/lib/trance-relevance";
+import { isProgressiveDepth } from "@/lib/progressive-depth";
 
 const lowSignalPatterns = [
   /\bweekly\b/i,
@@ -312,6 +313,15 @@ export function judgeAutoDraftCandidate(candidate: Candidate): EditorialDecision
       score,
       scope,
       reason: "自动草稿跳过：非传思主题，泛 EDM / 硬件 / 无关现场不进入候选池。",
+    };
+  }
+
+  if (isProgressiveDepth(candidate)) {
+    return {
+      accepted: true,
+      score: Math.max(score, 5),
+      scope,
+      reason: "通过 Progressive House 深读筛选：相关艺人/厂牌与访谈/幕后专题同时命中，仍需抓取复核和人工审核。",
     };
   }
 
