@@ -17,6 +17,10 @@ function cleanText(value?: string | null) {
   return (value ?? "").replace(/\s+/g, " ").trim();
 }
 
+function feedExcerpt(...values: Array<string | null | undefined>) {
+  return cleanText(values.filter(Boolean).join(" ")).slice(0, 500);
+}
+
 function parseDate(value?: string | null) {
   if (!value) return null;
   const date = new Date(value);
@@ -68,10 +72,10 @@ export async function fetchFeed(feedUrl: string): Promise<FeedScanResult> {
           cleanText(element.children("pubDate").first().text()) ||
             cleanText(element.children("dc\\:date").first().text()),
         ),
-        excerpt: cleanText(
-          element.children("description").first().text() ||
-            element.children("content\\:encoded").first().text(),
-        ).slice(0, 500),
+        excerpt: feedExcerpt(
+          element.children("description").first().text(),
+          element.children("content\\:encoded").first().text(),
+        ),
       };
     })
     .get()
@@ -93,10 +97,10 @@ export async function fetchFeed(feedUrl: string): Promise<FeedScanResult> {
           cleanText(element.children("published").first().text()) ||
             cleanText(element.children("updated").first().text()),
         ),
-        excerpt: cleanText(
-          element.children("summary").first().text() ||
-            element.children("content").first().text(),
-        ).slice(0, 500),
+        excerpt: feedExcerpt(
+          element.children("summary").first().text(),
+          element.children("content").first().text(),
+        ),
       };
     })
     .get()

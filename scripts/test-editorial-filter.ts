@@ -4,12 +4,17 @@ import { judgeAutoDraftCandidate } from "../src/lib/editorial-filter";
 import {
   filterFunRadarItems,
   filterGenericEdmItems,
+  filterProgressiveDepthItems,
   filterYouTubeItems,
 } from "../src/lib/source-filters";
 import { classifyTranceScope } from "../src/lib/trance-relevance";
 
 const genericSource = { name: "We Rave You", type: "GENERIC_EDM_RSS" };
 const funSource = { name: "MusicTech Fun Radar", type: "FUN_RADAR_RSS" };
+const progressiveSource = {
+  name: "Sound Avenue Labelgroup",
+  type: "PROGRESSIVE_DEPTH_RSS",
+};
 for (const [title, excerpt, accepted] of [
   ["Mike Rish [Interview + Premiere]", "Progressive house producer discusses founding a label and creative decisions.", true],
   ["John Digweed in conversation", "The DJ discusses Bedrock and club culture.", true],
@@ -68,6 +73,43 @@ assert.equal(
     url: "https://example.com/kraftwerk-retrospective",
   }),
   "CONTEXT",
+);
+
+assert.deepEqual(
+  filterProgressiveDepthItems([
+    {
+      title: "The Journey to Elysium: Borda on His Debut Album",
+      url: "https://soundavenue.example.com/borda",
+      publishedAt: new Date(),
+      excerpt:
+        "We caught up with Borda to discuss two decades of progressive house and the creative process behind his debut album.",
+    },
+    {
+      title: "Mr. Polska on rave culture and his latest single",
+      url: "https://example.com/rave-culture",
+      publishedAt: new Date(),
+      excerpt: "An interview about a new electronic release.",
+    },
+    {
+      title: "Premiere: Guy J - New Track",
+      url: "https://example.com/premiere",
+      publishedAt: new Date(),
+      excerpt: "Progressive house single out now.",
+    },
+  ]).map((item) => item.url),
+  ["https://soundavenue.example.com/borda"],
+);
+
+assert.equal(
+  judgeAutoDraftCandidate({
+    title: "The Journey to Elysium: Borda on His Debut Album",
+    url: "https://soundavenue.example.com/borda",
+    rawExcerpt:
+      "We caught up with Borda to discuss two decades of progressive house and the creative process behind his debut album.",
+    note: null,
+    source: progressiveSource,
+  }).accepted,
+  true,
 );
 
 assert.deepEqual(

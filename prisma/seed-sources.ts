@@ -7,19 +7,25 @@ const defaultSources = [
     name: "Progressive Astronaut Interviews",
     url: "https://progressiveastronaut.com/category/interviews/",
     feedUrl: "https://progressiveastronaut.com/category/interviews/feed/",
-    type: "FUN_RADAR_RSS",
+    type: "PROGRESSIVE_DEPTH_RSS",
   },
   {
     name: "Decoded Magazine Interviews",
     url: "https://www.decodedmagazine.com/category/news/interviews/",
     feedUrl: "https://www.decodedmagazine.com/category/news/interviews/feed/",
-    type: "FUN_RADAR_RSS",
+    type: "PROGRESSIVE_DEPTH_RSS",
   },
   {
     name: "Electronic Groove Interviews & Features",
     url: "https://electronicgroove.com/category/interviews-features/",
     feedUrl: "https://electronicgroove.com/category/interviews-features/feed/",
-    type: "FUN_RADAR_RSS",
+    type: "PROGRESSIVE_DEPTH_RSS",
+  },
+  {
+    name: "Sound Avenue Labelgroup",
+    url: "https://soundavenue.substack.com/",
+    feedUrl: "https://soundavenue.substack.com/feed",
+    type: "PROGRESSIVE_DEPTH_RSS",
   },
   {
     name: "A State of Trance Label Radar",

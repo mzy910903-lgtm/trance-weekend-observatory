@@ -180,6 +180,12 @@ export function filterFunRadarItems(
   });
 }
 
+export function filterProgressiveDepthItems(items: FeedItem[]) {
+  return items.filter((item) =>
+    isProgressiveDepth({ title: item.title, rawExcerpt: item.excerpt }),
+  );
+}
+
 export function filterYouTubeItems(
   items: FeedItem[],
   source?: { name: string; type?: string },

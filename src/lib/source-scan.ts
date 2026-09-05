@@ -9,6 +9,7 @@ import {
   filterFunRadarItems,
   filterGenericEdmItems,
   filterLabelRadarItems,
+  filterProgressiveDepthItems,
   filterYouTubeItems,
 } from "@/lib/source-filters";
 import { SourceType } from "@/lib/source-types";
@@ -72,6 +73,20 @@ async function fetchSourceItems(source: ScanSource) {
       ...feed,
       items,
       message: relevanceMessage("口碑厂牌筛选", feed.items.length, items, source),
+    };
+  }
+
+  if (source.type === SourceType.PROGRESSIVE_DEPTH_RSS) {
+    const items = filterProgressiveDepthItems(feed.items);
+    return {
+      ...feed,
+      items,
+      message: relevanceMessage(
+        "Progressive House 深读筛选",
+        feed.items.length,
+        items,
+        source,
+      ),
     };
   }
 
