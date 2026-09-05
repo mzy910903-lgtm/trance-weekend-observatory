@@ -139,7 +139,11 @@ function isTrustedCoreSource(candidate: RelevanceCandidate) {
   const type = candidate.source?.type ?? "";
   const sourceName = candidate.source?.name ?? "";
 
-  if (type === "RA_NEWS_HTML" || type === "LABEL_RADAR_RSS") {
+  if (
+    type === "RA_NEWS_HTML" ||
+    type === "LABEL_RADAR_RSS" ||
+    type === "PROGRESSIVE_DEPTH_RSS"
+  ) {
     return true;
   }
 

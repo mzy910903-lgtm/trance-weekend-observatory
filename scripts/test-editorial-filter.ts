@@ -112,6 +112,17 @@ assert.equal(
   true,
 );
 
+assert.equal(
+  classifyTranceScope({
+    title: "The Journey to Elysium: Borda on His Debut Album",
+    url: "https://soundavenue.example.com/borda",
+    rawExcerpt:
+      "Borda reflects on two decades of electronic music discovery and his debut album.",
+    source: progressiveSource,
+  }),
+  "CORE",
+);
+
 assert.deepEqual(
   filterGenericEdmItems(
     [
