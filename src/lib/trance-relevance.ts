@@ -153,11 +153,13 @@ function isTrustedCoreSource(candidate: RelevanceCandidate) {
 export function classifyTranceScope(candidate: RelevanceCandidate): EditorialScope {
   const content = normalizedText(candidate, false);
 
-  if (matchesAny(coreTrancePatterns, content) || isTrustedCoreSource(candidate)) {
+  if (
+    matchesAny(coreTrancePatterns, content) ||
+    isProgressiveDepth(candidate) ||
+    isTrustedCoreSource(candidate)
+  ) {
     return "CORE";
   }
-
-  if (isProgressiveDepth(candidate)) return "CONTEXT";
 
   if (
     matchesAny(adjacentCulturePeoplePatterns, content) &&

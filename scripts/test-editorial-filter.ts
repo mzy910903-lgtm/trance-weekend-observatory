@@ -23,7 +23,7 @@ for (const [title, excerpt, accepted] of [
 ] as const) {
   const candidate = { title, rawExcerpt: excerpt, url: "https://example.com/story", note: null, source: funSource };
   assert.equal(judgeAutoDraftCandidate(candidate).accepted, accepted, title);
-  if (accepted) assert.equal(classifyTranceScope(candidate), "CONTEXT");
+  if (accepted) assert.equal(classifyTranceScope(candidate), "CORE");
   assert.equal(filterFunRadarItems([{ title, excerpt, url: candidate.url, publishedAt: new Date() }], funSource).length, accepted ? 1 : 0, title);
 }
 const artistChannel = {
