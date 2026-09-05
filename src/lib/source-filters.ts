@@ -108,6 +108,10 @@ function itemText(item: FeedItem) {
   return `${item.title}\n${item.url}\n${item.excerpt}`;
 }
 
+function itemContent(item: FeedItem) {
+  return `${item.title}\n${item.excerpt}`;
+}
+
 function scopeForItem(
   item: FeedItem,
   source?: { name: string; type?: string },
@@ -152,7 +156,7 @@ export function filterLabelRadarItems(
 ) {
   return items.filter((item) => {
     const text = `${source?.name ?? ""}\n${itemText(item)}`;
-    if (lowSignalVideoPatterns.some((pattern) => pattern.test(text))) {
+    if (lowSignalVideoPatterns.some((pattern) => pattern.test(itemContent(item)))) {
       return false;
     }
     return (
@@ -171,7 +175,7 @@ export function filterFunRadarItems(
   return items.filter((item) => {
     const text = itemText(item);
     if (isProgressiveDepth({ title: item.title, rawExcerpt: item.excerpt })) return true;
-    if (lowSignalVideoPatterns.some((pattern) => pattern.test(text))) {
+    if (lowSignalVideoPatterns.some((pattern) => pattern.test(itemContent(item)))) {
       return false;
     }
     return (
@@ -192,9 +196,10 @@ export function filterYouTubeItems(
   source?: { name: string; type?: string },
 ) {
   return items.filter((item) => {
-    const text = itemText(item);
     if (!isTranceRelevantItem(item, source)) return false;
-    if (lowSignalVideoPatterns.some((pattern) => pattern.test(text))) {
+    if (
+      lowSignalVideoPatterns.some((pattern) => pattern.test(itemContent(item)))
+    ) {
       return false;
     }
     return isSocialNewsItem(item);

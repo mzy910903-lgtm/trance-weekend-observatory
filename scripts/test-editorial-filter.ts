@@ -112,6 +112,22 @@ assert.equal(
   true,
 );
 
+assert.deepEqual(
+  filterFunRadarItems(
+    [
+      {
+        title: "Full Circle discuss what Goa trance became",
+        url: "https://example.com/music/mixes/full-circle",
+        publishedAt: new Date(),
+        excerpt:
+          "In conversation, the duo argue Goa trance became commercial and formulaic.",
+      },
+    ],
+    funSource,
+  ).map((item) => item.url),
+  ["https://example.com/music/mixes/full-circle"],
+);
+
 assert.equal(
   classifyTranceScope({
     title: "The Journey to Elysium: Borda on His Debut Album",
