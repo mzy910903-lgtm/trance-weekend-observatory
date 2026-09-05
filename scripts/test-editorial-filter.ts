@@ -112,6 +112,19 @@ assert.equal(
   true,
 );
 
+assert.equal(
+  judgeAutoDraftCandidate({
+    title: "Armin van Buuren & Laidback Luke werden KI-Berater",
+    url: "https://www.fazemag.de/armin-van-buuren-ki-berater/",
+    rawExcerpt:
+      "Die Künstler wirken im Artist Partnerships-Programm von Moises mit und sollen das Unternehmen bei KI-gestützten Werkzeugen beraten.",
+    note: null,
+    publishedAt: new Date(),
+    source: genericSource,
+  }).accepted,
+  true,
+);
+
 assert.deepEqual(
   filterFunRadarItems(
     [
@@ -242,7 +255,7 @@ assert.equal(
     title: "Full Circle discuss what Goa trance became",
     url: "https://example.com/music/mixes/full-circle",
     rawExcerpt:
-      "In conversation, the duo argue Goa trance became commercial and formulaic, and explain why they prefer its undefinable proto roots.",
+      "Fifteen years since Joakim first played a slowed-down Goa trance record, the pair interview each other about the genre's proto roots.",
     note: null,
     publishedAt: new Date(),
     source: funSource,
