@@ -23,6 +23,8 @@ const socialNewsPatterns = [
   /rename[sd]?/i,
   /surprise/i,
   /interview/i,
+  /in conversation/i,
+  /formulaic|commerciali[sz](?:e|ed|ation)|commodif(?:y|ied|ication)/i,
   /trailer/i,
   /aftermovie/i,
   /宣布|确认|公布|公开|回归|复出|取消|声明|阵容|巡演|音乐节|专辑|厂牌|争议|事故|热议|改名|更名|预告|访谈/,
@@ -156,7 +158,10 @@ export function filterLabelRadarItems(
 ) {
   return items.filter((item) => {
     const text = `${source?.name ?? ""}\n${itemText(item)}`;
-    if (lowSignalVideoPatterns.some((pattern) => pattern.test(itemContent(item)))) {
+    if (
+      lowSignalVideoPatterns.some((pattern) => pattern.test(itemContent(item))) &&
+      !isSocialNewsItem(item)
+    ) {
       return false;
     }
     return (
@@ -175,7 +180,10 @@ export function filterFunRadarItems(
   return items.filter((item) => {
     const text = itemText(item);
     if (isProgressiveDepth({ title: item.title, rawExcerpt: item.excerpt })) return true;
-    if (lowSignalVideoPatterns.some((pattern) => pattern.test(itemContent(item)))) {
+    if (
+      lowSignalVideoPatterns.some((pattern) => pattern.test(itemContent(item))) &&
+      !isSocialNewsItem(item)
+    ) {
       return false;
     }
     return (

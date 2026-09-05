@@ -120,7 +120,7 @@ assert.deepEqual(
         url: "https://example.com/music/mixes/full-circle",
         publishedAt: new Date(),
         excerpt:
-          "In conversation, the duo argue Goa trance became commercial and formulaic.",
+          "In conversation, the duo discuss a mixtape and argue Goa trance became commercial and formulaic.",
       },
     ],
     funSource,
