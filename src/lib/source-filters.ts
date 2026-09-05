@@ -81,10 +81,11 @@ const funRadarPatterns = [
   /birthday|turns?\s+\d+/i,
   /pride|community|culture/i,
   /review/i,
+  /formulaic|commerciali[sz](?:e|ed|ation)|commodif(?:y|ied|ication)/i,
   /copyright|lawsuit|legal|court|policy|platform/i,
   /documentary|reissue|shutdown|acquire[sd]?|obituary|dies|death/i,
   /版权|诉讼|法律|平台|纪录片|再版|关闭|收购|去世/,
-  /争议|回应|指控|法律|事故|故障|意外|惊喜|奇怪|采访|制作人|合成器|插件|设备|工作室|生日|社区|文化|现场回顾/,
+  /争议|回应|指控|法律|事故|故障|意外|惊喜|奇怪|采访|制作人|合成器|插件|设备|工作室|生日|社区|文化|现场回顾|公式化|商业化/,
 ];
 
 const lowSignalVideoPatterns = [

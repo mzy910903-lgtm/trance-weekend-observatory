@@ -97,7 +97,10 @@ const dramaticPatterns = [
   /\bcommunity\b/i,
   /\bforum\b/i,
   /\bfans?\s+(?:react|respond|debate)\b/i,
+  /\b(?:joins?|appointed?|advis(?:er|or|ory)|artist partnerships?)\b/i,
+  /\b(?:formulaic|commerciali[sz](?:e|ed|ation)|commodif(?:y|ied|ication))\b/i,
   /确认|回归|复出|重启|新篇章|独家|头牌|压轴|关闭|取消|收购|合并|争议|道歉|声明|改名|更名|事故|故障|翻车|反转|意外|惊喜|热议|爆火|社区|粉丝讨论|去世/,
+  /加入|受聘|顾问|公式化|商业化/,
 ];
 
 const importancePatterns = [
@@ -140,7 +143,10 @@ const interestingPatterns = [
   /\bcommunity\b/i,
   /\bforum\b/i,
   /\bfans?\s+(?:react|respond|debate)\b/i,
+  /\b(?:responsible\s+ai|music\s+ai|ai\s+(?:company|tools?|platform))\b/i,
+  /\b(?:formulaic|commerciali[sz](?:e|ed|ation)|commodif(?:y|ied|ication))\b/i,
   /争议|道歉|声明|改名|更名|事故|故障|翻车|反转|意外|惊喜|热议|爆火|社区|粉丝讨论/,
+  /人工智能|公式化|商业化/,
 ];
 
 const ordinaryPromoPatterns = [
@@ -176,7 +182,11 @@ const strongEventPatterns = [
   /\b(?:after\s+\d{2}\s+years?|first\s+(?:original|new)|classic)\b/i,
   /\b(?:incident|accident|malfunction|unexpected|surprise|viral)\b/i,
   /\b(?:fans?\s+(?:react|respond|debate)|community|forum)\b/i,
+  /\b(?:joins?|appointed?|advis(?:er|or|ory)|artist partnerships?)\b/i,
+  /\b(?:responsible\s+ai|music\s+ai|ai\s+(?:company|tools?|platform))\b/i,
+  /\b(?:formulaic|commerciali[sz](?:e|ed|ation)|commodif(?:y|ied|ication))\b/i,
   /诉讼|法院|封禁|政策|平台|声明|道歉|争议|反弹|取消|延期|关闭|复出|回归|重启|改名|更名|音乐节|巡演|阵容|头牌|周年|专辑|厂牌|事故|故障|意外|惊喜|热议|社区|粉丝讨论/,
+  /加入|受聘|顾问|人工智能|公式化|商业化/,
 ];
 
 const reputationRadarPatterns = [
@@ -242,7 +252,6 @@ function normalizedText(candidate: Candidate) {
     candidate.source?.name,
     candidate.rawExcerpt,
     candidate.note,
-    candidate.url,
   ]
     .filter(Boolean)
     .join("\n")

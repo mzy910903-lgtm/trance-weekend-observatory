@@ -22,6 +22,18 @@ const defaultSources = [
     type: "PROGRESSIVE_DEPTH_RSS",
   },
   {
+    name: "FAZEmag Electronic Music News",
+    url: "https://www.fazemag.de/",
+    feedUrl: "https://www.fazemag.de/feed/",
+    type: "GENERIC_EDM_RSS",
+  },
+  {
+    name: "Ransom Note Trance Culture Radar",
+    url: "https://www.theransomnote.com/",
+    feedUrl: "https://www.theransomnote.com/feed/",
+    type: "FUN_RADAR_RSS",
+  },
+  {
     name: "Sound Avenue Labelgroup",
     url: "https://soundavenue.substack.com/",
     feedUrl: "https://soundavenue.substack.com/feed",

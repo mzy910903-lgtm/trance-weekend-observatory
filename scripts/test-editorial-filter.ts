@@ -207,6 +207,33 @@ assert.equal(
   false,
 );
 
+assert.equal(
+  judgeAutoDraftCandidate({
+    title:
+      "Armin van Buuren and Laidback Luke join Moises to build responsible AI tools",
+    url: "https://example.com/armin-moises-ai",
+    rawExcerpt:
+      "The artists join the company's Artist Partnerships program as advisers on responsible music AI.",
+    note: null,
+    publishedAt: new Date(),
+    source: genericSource,
+  }).accepted,
+  true,
+);
+
+assert.equal(
+  judgeAutoDraftCandidate({
+    title: "Full Circle discuss what Goa trance became",
+    url: "https://example.com/music/mixes/full-circle",
+    rawExcerpt:
+      "In conversation, the duo argue Goa trance became commercial and formulaic, and explain why they prefer its undefinable proto roots.",
+    note: null,
+    publishedAt: new Date(),
+    source: funSource,
+  }).accepted,
+  true,
+);
+
 assert.equal(calculateContextLimit(20, 16), 4);
 assert.equal(calculateContextLimit(10, 8), 2);
 assert.equal(calculateContextLimit(20, 3), 0);
