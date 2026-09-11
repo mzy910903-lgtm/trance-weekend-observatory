@@ -8,6 +8,7 @@ import {
   normalizeArticleSort,
 } from "@/lib/articles";
 import { categoryBySlug } from "@/lib/categories";
+import { getViewerState } from "@/lib/member-data";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,8 @@ export default async function CategoryPage({
     sort,
   });
   const popularTags = getPopularTags(articles, 10);
+  const viewer = await getViewerState(articles.map((article) => article.id));
+  const returnTo = sort ? `/category/${slug}?sort=${sort}` : `/category/${slug}`;
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-10">
@@ -84,7 +87,13 @@ export default async function CategoryPage({
       <section className="mt-8">
         {articles.length > 0 ? (
           articles.map((article) => (
-            <ArticleCard key={article.id} article={article} />
+            <ArticleCard
+              key={article.id}
+              article={article}
+              loggedIn={Boolean(viewer.user)}
+              bookmarked={viewer.bookmarkedArticleIds.has(article.id)}
+              returnTo={returnTo}
+            />
           ))
         ) : (
           <div className="rounded border border-white/10 py-16 text-center text-zinc-400">

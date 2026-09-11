@@ -48,6 +48,7 @@ model Article {
   source            Source?          @relation(fields: [sourceId], references: [id])
   submission        Submission?      @relation(fields: [submissionId], references: [id])
   tags              ArticleTag[]
+  bookmarks         Bookmark[]
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
@@ -89,6 +90,7 @@ model Tag {
   name      String       @unique
   slug      String       @unique
   articles  ArticleTag[]
+  followers TagFollow[]
   createdAt DateTime     @default(now())
 }
 
@@ -99,4 +101,90 @@ model ArticleTag {
   tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([articleId, tagId])
+}
+
+model User {
+  id             String             @id @default(cuid())
+  wechatOpenId   String             @unique
+  unionId        String?            @unique
+  nickname       String
+  avatarUrl      String?
+  lastLoginAt    DateTime           @default(now())
+  sessions       UserSession[]
+  bookmarks      Bookmark[]
+  followedTags   TagFollow[]
+  activityDays   UserActivityDay[]
+  redemptions    InviteRedemption[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+model UserSession {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  lastUsedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@index([userId, expiresAt])
+}
+
+model InviteCode {
+  id          String             @id @default(cuid())
+  codeHash    String             @unique
+  codePrefix  String
+  note        String?
+  maxUses     Int                @default(1)
+  usedCount   Int                @default(0)
+  expiresAt   DateTime?
+  enabled     Boolean            @default(true)
+  redemptions InviteRedemption[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model InviteRedemption {
+  id           String     @id @default(cuid())
+  inviteCodeId String
+  userId       String     @unique
+  inviteCode   InviteCode @relation(fields: [inviteCodeId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@index([inviteCodeId, createdAt])
+}
+
+model Bookmark {
+  userId    String
+  articleId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, articleId])
+  @@index([articleId])
+}
+
+model TagFollow {
+  userId    String
+  tagId     String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, tagId])
+  @@index([tagId])
+}
+
+model UserActivityDay {
+  id           String   @id @default(cuid())
+  userId       String
+  activityDate String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, activityDate])
+  @@index([activityDate])
 }

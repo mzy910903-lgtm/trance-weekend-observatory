@@ -6,6 +6,9 @@ import { getRelatedArticles } from "@/lib/articles";
 import { ArticleStatus, categories, categoryLabel } from "@/lib/categories";
 import { formatSourceDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { BookmarkButton } from "@/components/BookmarkButton";
+import { TagFollowButton } from "@/components/TagFollowButton";
+import { getViewerState } from "@/lib/member-data";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +26,11 @@ export default async function ArticlePage({
   if (!article) notFound();
 
   const relatedArticles = await getRelatedArticles(article);
+  const viewer = await getViewerState(
+    [article.id, ...relatedArticles.map((item) => item.id)],
+    article.tags.map(({ tag }) => tag.id),
+  );
+  const returnTo = `/articles/${article.slug}`;
   const categorySlug =
     categories.find((category) => category.key === article.category)?.slug ??
     "news";
@@ -52,6 +60,14 @@ export default async function ArticlePage({
           <p className="mt-6 border-l border-sky-300/70 pl-4 text-lg leading-8 text-sky-100">
             {article.aiComment}
           </p>
+          <div className="mt-5">
+            <BookmarkButton
+              articleId={article.id}
+              bookmarked={viewer.bookmarkedArticleIds.has(article.id)}
+              loggedIn={Boolean(viewer.user)}
+              returnTo={returnTo}
+            />
+          </div>
           <div className="mt-8 space-y-5 text-base leading-8 text-zinc-300">
             {article.fullSummary.split("\n").map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>
@@ -103,13 +119,20 @@ export default async function ArticlePage({
             <h3 className="text-sm font-semibold text-white">相关标签</h3>
             <div className="mt-4 flex flex-wrap gap-2">
               {article.tags.map(({ tag }) => (
-                <Link
-                  key={tag.id}
-                  href={`/tags/${tag.slug}`}
-                  className="rounded-full bg-white/[0.06] px-2.5 py-1 text-xs text-zinc-300 transition hover:bg-sky-300 hover:text-black"
-                >
-                  #{tag.name}
-                </Link>
+                <span key={tag.id} className="flex items-center gap-1">
+                  <Link
+                    href={`/tags/${tag.slug}`}
+                    className="rounded-full bg-white/[0.06] px-2.5 py-1 text-xs text-zinc-300 transition hover:bg-sky-300 hover:text-black"
+                  >
+                    #{tag.name}
+                  </Link>
+                  <TagFollowButton
+                    tagId={tag.id}
+                    followed={viewer.followedTagIds.has(tag.id)}
+                    loggedIn={Boolean(viewer.user)}
+                    returnTo={returnTo}
+                  />
+                </span>
               ))}
             </div>
           </div>
@@ -138,6 +161,9 @@ export default async function ArticlePage({
                 key={related.id}
                 article={related}
                 variant="compact"
+                loggedIn={Boolean(viewer.user)}
+                bookmarked={viewer.bookmarkedArticleIds.has(related.id)}
+                returnTo={returnTo}
               />
             ))}
           </div>

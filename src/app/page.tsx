@@ -7,6 +7,8 @@ import {
   type ArticleWithTags,
 } from "@/lib/articles";
 import { categories } from "@/lib/categories";
+import { getViewerState } from "@/lib/member-data";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -88,6 +90,48 @@ export default async function Home({ searchParams }: HomeProps) {
   const { articles, leadArticle, highlights, stats, popularTags } =
     await getHomeRadar(sort);
   const feedArticles = articles.filter((article) => article.id !== leadArticle?.id);
+  const allArticleIds = Array.from(
+    new Set([
+      ...articles.map((article) => article.id),
+      ...highlights.importance.map((article) => article.id),
+      ...highlights.artistry.map((article) => article.id),
+      ...highlights.humor.map((article) => article.id),
+    ]),
+  );
+  const viewer = await getViewerState(allArticleIds);
+  const followedTags = viewer.user
+    ? await prisma.tagFollow.findMany({
+        where: { userId: viewer.user.id },
+        include: { tag: true },
+      })
+    : [];
+  const personalArticles = followedTags.length
+    ? await prisma.article.findMany({
+        where: {
+          status: "PUBLISHED",
+          tags: { some: { tagId: { in: followedTags.map((item) => item.tagId) } } },
+        },
+        include: { tags: { include: { tag: true } } },
+        orderBy: [
+          { sourcePublishedAt: "desc" },
+          { publishedAt: "desc" },
+          { createdAt: "desc" },
+        ],
+        take: 6,
+      })
+    : [];
+  if (viewer.user && personalArticles.length) {
+    const personalBookmarks = await prisma.bookmark.findMany({
+      where: {
+        userId: viewer.user.id,
+        articleId: { in: personalArticles.map((article) => article.id) },
+      },
+      select: { articleId: true },
+    });
+    personalBookmarks.forEach(({ articleId }) =>
+      viewer.bookmarkedArticleIds.add(articleId),
+    );
+  }
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-10">
@@ -124,7 +168,12 @@ export default async function Home({ searchParams }: HomeProps) {
 
       <section className="grid gap-6 border-b border-white/10 py-8 lg:grid-cols-[1fr_340px]">
         {leadArticle ? (
-          <ArticleCard article={leadArticle} variant="lead" />
+          <ArticleCard
+            article={leadArticle}
+            variant="lead"
+            loggedIn={Boolean(viewer.user)}
+            bookmarked={viewer.bookmarkedArticleIds.has(leadArticle.id)}
+          />
         ) : (
           <div className="rounded border border-white/10 bg-white/[0.03] p-8 text-zinc-400">
             这片频段暂时安静。先去后台发布第一条资讯。
@@ -168,6 +217,44 @@ export default async function Home({ searchParams }: HomeProps) {
         </aside>
       </section>
 
+      {viewer.user ? (
+        <section className="border-b border-white/10 py-8">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.35em] text-sky-200">
+                your frequency
+              </p>
+              <h2 className="mt-2 text-3xl font-semibold text-white">我的频段</h2>
+              <p className="mt-2 text-sm text-zinc-500">
+                {followedTags.length
+                  ? `正在监听 ${followedTags.map(({ tag }) => `#${tag.name}`).join("、")}`
+                  : "先关注几个标签，首页就会长出属于你的雷达。"}
+              </p>
+            </div>
+            <Link href="/me" className="text-sm text-sky-200 hover:text-white">
+              管理我的雷达
+            </Link>
+          </div>
+          {personalArticles.length ? (
+            <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {personalArticles.map((article) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  variant="compact"
+                  loggedIn
+                  bookmarked={viewer.bookmarkedArticleIds.has(article.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="mt-6 rounded border border-white/10 p-6 text-sm text-zinc-400">
+              从任意标签页点“关注”，这里就会开始接收信号。
+            </div>
+          )}
+        </section>
+      ) : null}
+
       <section className="grid gap-4 border-b border-white/10 py-8 lg:grid-cols-3">
         <HighlightList
           title="重要性高压区"
@@ -200,7 +287,13 @@ export default async function Home({ searchParams }: HomeProps) {
         {feedArticles.length > 0 ? (
           <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {feedArticles.map((article) => (
-              <ArticleCard key={article.id} article={article} variant="compact" />
+              <ArticleCard
+                key={article.id}
+                article={article}
+                variant="compact"
+                loggedIn={Boolean(viewer.user)}
+                bookmarked={viewer.bookmarkedArticleIds.has(article.id)}
+              />
             ))}
           </div>
         ) : articles.length > 0 ? (

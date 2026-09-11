@@ -3,6 +3,9 @@ import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://observatory.tranceweekend.com",
+  ),
   title: "传思宇宙观察局 | Trance Weekend",
   description: "Trance Weekend 的 Trance 领域资讯观察局。",
 };

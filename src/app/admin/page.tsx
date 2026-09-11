@@ -5,6 +5,10 @@ import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { sourceTypeOptions } from "@/lib/source-types";
 import { classifyTranceScope, editorialScopeLabel } from "@/lib/trance-relevance";
+import {
+  InviteManager,
+  type InviteView,
+} from "@/components/admin/InviteManager";
 
 export const dynamic = "force-dynamic";
 
@@ -751,11 +755,11 @@ export default async function AdminPage({
     published,
     publishError,
   } = await searchParams;
-  const activeTab = tab === "sources" ? "sources" : "queue";
+  const activeTab = tab === "sources" || tab === "invites" ? tab : "queue";
   const activeStatus = statusFilters.some((item) => item.key === status)
     ? status
     : SubmissionStatus.ANALYZED;
-  const [submissions, sources] = await Promise.all([
+  const [submissions, sources, inviteRows] = await Promise.all([
     prisma.submission.findMany({
       where:
         activeStatus && activeStatus !== "ALL" ? { status: activeStatus } : {},
@@ -771,9 +775,34 @@ export default async function AdminPage({
       },
       orderBy: [{ enabled: "desc" }, { updatedAt: "desc" }],
     }),
+    prisma.inviteCode.findMany({
+      include: {
+        redemptions: {
+          include: { user: { select: { nickname: true } } },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
-  const tabLinkClass = (key: "queue" | "sources") =>
+  const invites: InviteView[] = inviteRows.map((invite) => ({
+    id: invite.id,
+    codePrefix: invite.codePrefix,
+    note: invite.note,
+    maxUses: invite.maxUses,
+    usedCount: invite.usedCount,
+    expiresAt: invite.expiresAt?.toISOString() ?? null,
+    enabled: invite.enabled,
+    createdAt: invite.createdAt.toISOString(),
+    redemptions: invite.redemptions.map((redemption) => ({
+      id: redemption.id,
+      createdAt: redemption.createdAt.toISOString(),
+      nickname: redemption.user.nickname,
+    })),
+  }));
+
+  const tabLinkClass = (key: "queue" | "sources" | "invites") =>
     `rounded-full border px-4 py-2 text-sm transition ${
       activeTab === key
         ? "border-sky-300 bg-sky-300 text-black"
@@ -796,6 +825,9 @@ export default async function AdminPage({
         </Link>
         <Link href="/admin?tab=sources" className={tabLinkClass("sources")}>
           内容源
+        </Link>
+        <Link href="/admin?tab=invites" className={tabLinkClass("invites")}>
+          邀请码
         </Link>
         <form action="/api/admin/logout" method="post">
           <button className="rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-300 transition hover:border-sky-300 hover:text-white">
@@ -845,6 +877,8 @@ export default async function AdminPage({
 
       {activeTab === "sources" ? (
         <SourcesPanel sources={sources} />
+      ) : activeTab === "invites" ? (
+        <InviteManager invites={invites} />
       ) : (
         <QueuePanel submissions={submissions} activeStatus={activeStatus} />
       )}

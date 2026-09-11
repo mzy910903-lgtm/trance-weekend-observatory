@@ -44,6 +44,10 @@ ADMIN_PASSWORD="your-admin-password"
 ADMIN_COOKIE_SECRET="a-long-random-secret"
 CRON_SECRET="a-long-random-cron-secret"
 OBSERVATORY_DASHBOARD_TOKEN="a-shared-secret-for-the-main-dashboard"
+NEXT_PUBLIC_SITE_URL="https://observatory.tranceweekend.com"
+WECHAT_APP_ID="your-official-account-app-id"
+WECHAT_APP_SECRET="your-official-account-app-secret"
+USER_SESSION_SECRET="another-long-random-secret"
 AUTO_DRAFT_LIMIT="20"
 AUTO_DRAFT_MIN_CANDIDATES="10"
 AUTO_DRAFT_RETENTION_DAYS="7"
@@ -54,6 +58,18 @@ INSTAGRAM_GRAPH_API_VERSION="v21.0"
 ```
 
 `AI_PROVIDER` 推荐用 `deepseek` 做资讯翻译、摘要和标签，性价比较高；也可以设为 `openai`。`AI_API_KEY` 是通用 key；旧的 `OPENAI_API_KEY` 仍兼容。`ADMIN_PASSWORD` 用于后台登录，`ADMIN_COOKIE_SECRET` 用于签名 httpOnly cookie，`CRON_SECRET` 用于保护定时任务接口。`OBSERVATORY_DASHBOARD_TOKEN` 是给 `www.tranceweekend.com/dashboard` 读取运营汇总的共享口令，必须只配置在部署平台环境变量中。`AUTO_DRAFT_LIMIT` 控制每日候选上限，默认 20；`AUTO_DRAFT_MIN_CANDIDATES` 是每日候选目标，默认 10。`AUTO_DRAFT_RETENTION_DAYS` 可选，默认 7，超过天数仍未发布的草稿会自动移出候选池。`AUTO_DRAFT_MAX_SOURCE_AGE_DAYS` 可选，默认 7，超过该时效窗口的来源文章会被判定为旧闻并拒绝进入候选；已发布文章不受这个窗口影响。口碑厂牌与趣闻雷达只改变题材优先级，不放宽 7 天时效。Instagram radar 需要官方 Graph API token；未配置时会跳过，不影响其它来源。
+
+## 小圈子会员
+
+公开资讯不要求登录。收藏、标签关注和 `/me` 我的雷达使用已认证微信公众号网页授权，首次加入需要后台生成的邀请码。
+
+1. 在公众号后台将 `observatory.tranceweekend.com` 配置为网页授权回调域名（只填域名，不含协议和路径）。
+2. 在 Vercel 配置 `WECHAT_APP_ID`、`WECHAT_APP_SECRET`、`USER_SESSION_SECRET` 和 `NEXT_PUBLIC_SITE_URL`。
+3. 管理员进入 `/admin?tab=invites` 创建邀请码并发给首批群友。
+4. 普通浏览器访问 `/login` 会显示二维码；用户用微信扫描后完成授权。微信内可直接登录。
+5. `/weekly` 是公开的七日精选分享页，可复制链接后人工发送到微信群。
+
+完整邀请码只在创建成功时展示一次，数据库只保存哈希。会员会话 Cookie 有效期 30 天；用户可在 `/me` 退出或清除微信身份、会话、收藏和关注数据。
 
 ## 后台流程
 

@@ -7,6 +7,8 @@ import {
   normalizeArticleSort,
 } from "@/lib/articles";
 import { prisma } from "@/lib/prisma";
+import { getViewerState } from "@/lib/member-data";
+import { TagFollowButton } from "@/components/TagFollowButton";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,11 @@ export default async function TagPage({
 
   const activeSort = normalizeArticleSort(sort);
   const articles = await getPublishedArticles({ tagSlug: tag.slug, sort });
+  const viewer = await getViewerState(
+    articles.map((article) => article.id),
+    [tag.id],
+  );
+  const returnTo = sort ? `/tags/${slug}?sort=${sort}` : `/tags/${slug}`;
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-10">
@@ -32,7 +39,15 @@ export default async function TagPage({
         <p className="font-mono text-sm uppercase tracking-[0.45em] text-zinc-500">
           tag frequency
         </p>
-        <h2 className="mt-3 text-5xl font-semibold text-white">#{tag.name}</h2>
+        <div className="mt-3 flex flex-wrap items-center gap-4">
+          <h2 className="text-5xl font-semibold text-white">#{tag.name}</h2>
+          <TagFollowButton
+            tagId={tag.id}
+            followed={viewer.followedTagIds.has(tag.id)}
+            loggedIn={Boolean(viewer.user)}
+            returnTo={returnTo}
+          />
+        </div>
         <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-400">
           所有带有这个信号的已发布资讯。依然只展示短摘要，深入阅读请回到来源。
         </p>
@@ -60,7 +75,13 @@ export default async function TagPage({
       <section className="mt-8">
         {articles.length > 0 ? (
           articles.map((article) => (
-            <ArticleCard key={article.id} article={article} />
+            <ArticleCard
+              key={article.id}
+              article={article}
+              loggedIn={Boolean(viewer.user)}
+              bookmarked={viewer.bookmarkedArticleIds.has(article.id)}
+              returnTo={returnTo}
+            />
           ))
         ) : (
           <div className="rounded border border-white/10 py-16 text-center text-zinc-400">

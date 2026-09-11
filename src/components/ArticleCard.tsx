@@ -3,13 +3,23 @@ import type { ArticleWithTags } from "@/lib/articles";
 import { categoryLabel } from "@/lib/categories";
 import { formatSourceDate } from "@/lib/format";
 import { ScorePill } from "./ScorePill";
+import { BookmarkButton } from "./BookmarkButton";
 
 type ArticleCardProps = {
   article: ArticleWithTags;
   variant?: "default" | "compact" | "lead";
+  bookmarked?: boolean;
+  loggedIn?: boolean;
+  returnTo?: string;
 };
 
-export function ArticleCard({ article, variant = "default" }: ArticleCardProps) {
+export function ArticleCard({
+  article,
+  variant = "default",
+  bookmarked = false,
+  loggedIn = false,
+  returnTo = "/",
+}: ArticleCardProps) {
   if (variant === "lead") {
     return (
       <article className="group overflow-hidden rounded border border-white/10 bg-white/[0.04]">
@@ -45,6 +55,14 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
             <ScorePill label="重要性" value={article.importanceScore} />
             <ScorePill label="艺术性" value={article.artistryScore} />
             <ScorePill label="幽默性" value={article.humorScore} />
+          </div>
+          <div className="mt-5">
+            <BookmarkButton
+              articleId={article.id}
+              bookmarked={bookmarked}
+              loggedIn={loggedIn}
+              returnTo={returnTo}
+            />
           </div>
         </div>
       </article>
@@ -105,7 +123,7 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
           <ScorePill label="艺术性" value={article.artistryScore} />
           <ScorePill label="幽默性" value={article.humorScore} />
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           {article.tags.map(({ tag }) => (
             <Link
               key={tag.id}
@@ -115,6 +133,12 @@ export function ArticleCard({ article, variant = "default" }: ArticleCardProps) 
               #{tag.name}
             </Link>
           ))}
+          <BookmarkButton
+            articleId={article.id}
+            bookmarked={bookmarked}
+            loggedIn={loggedIn}
+            returnTo={returnTo}
+          />
         </div>
       </div>
     </article>
