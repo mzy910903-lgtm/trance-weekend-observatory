@@ -45,8 +45,6 @@ ADMIN_COOKIE_SECRET="a-long-random-secret"
 CRON_SECRET="a-long-random-cron-secret"
 OBSERVATORY_DASHBOARD_TOKEN="a-shared-secret-for-the-main-dashboard"
 NEXT_PUBLIC_SITE_URL="https://observatory.tranceweekend.com"
-WECHAT_APP_ID="your-official-account-app-id"
-WECHAT_APP_SECRET="your-official-account-app-secret"
 USER_SESSION_SECRET="another-long-random-secret"
 AUTO_DRAFT_LIMIT="20"
 AUTO_DRAFT_MIN_CANDIDATES="10"
@@ -61,15 +59,15 @@ INSTAGRAM_GRAPH_API_VERSION="v21.0"
 
 ## 小圈子会员
 
-公开资讯不要求登录。收藏、标签关注和 `/me` 我的雷达使用已认证微信公众号网页授权，首次加入需要后台生成的邀请码。
+公开资讯不要求登录。收藏、标签关注和 `/me` 我的雷达使用站内小圈子账号，首次加入需要后台生成的邀请码。
 
-1. 在公众号后台将 `observatory.tranceweekend.com` 配置为网页授权回调域名（只填域名，不含协议和路径）。
-2. 在 Vercel 配置 `WECHAT_APP_ID`、`WECHAT_APP_SECRET`、`USER_SESSION_SECRET` 和 `NEXT_PUBLIC_SITE_URL`。
-3. 管理员进入 `/admin?tab=invites` 创建邀请码并发给首批群友。
-4. 普通浏览器访问 `/login` 会显示二维码；用户用微信扫描后完成授权。微信内可直接登录。
+1. 在 Vercel 配置 `USER_SESSION_SECRET` 和 `NEXT_PUBLIC_SITE_URL`。
+2. 管理员进入 `/admin?tab=invites` 创建邀请码并发给首批群友。
+3. 新成员在 `/login` 输入邀请码，设置唯一登录名、显示昵称和至少 8 位登录口令。
+4. 注册后不再需要邀请码，使用登录名和口令即可跨设备登录。
 5. `/weekly` 是公开的七日精选分享页，可复制链接后人工发送到微信群。
 
-完整邀请码只在创建成功时展示一次，数据库只保存哈希。会员会话 Cookie 有效期 30 天；用户可在 `/me` 退出或清除微信身份、会话、收藏和关注数据。
+完整邀请码只在创建成功时展示一次，数据库只保存邀请码哈希；登录口令使用随机盐 `scrypt` 哈希，不保存明文。会员会话 Cookie 有效期 30 天；用户可在 `/me` 退出或清除身份、会话、收藏和关注数据。微信公众号 OAuth 路由暂时保留为未来服务号或开放平台绑定入口，但不出现在当前登录界面。
 
 ## 后台流程
 

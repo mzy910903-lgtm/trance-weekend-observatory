@@ -4,14 +4,17 @@ import {
   createHash,
   createHmac,
   randomBytes,
+  scrypt as scryptCallback,
   timingSafeEqual,
 } from "node:crypto";
+import { promisify } from "node:util";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
 export const MEMBER_COOKIE = "tw_member_session";
 export const WECHAT_STATE_COOKIE = "tw_wechat_state";
 const SESSION_DAYS = 30;
+const scrypt = promisify(scryptCallback);
 
 export function hashValue(value: string) {
   return createHash("sha256").update(value).digest("hex");
@@ -23,6 +26,24 @@ export function normalizeInviteCode(value: string) {
 
 export function hashInviteCode(value: string) {
   return hashValue(normalizeInviteCode(value));
+}
+
+export function normalizeLoginName(value: string) {
+  return value.trim().toLocaleLowerCase("zh-CN");
+}
+
+export async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("base64url");
+  const derived = (await scrypt(password, salt, 64)) as Buffer;
+  return `scrypt$${salt}$${derived.toString("base64url")}`;
+}
+
+export async function verifyPassword(password: string, stored: string) {
+  const [algorithm, salt, encodedHash] = stored.split("$");
+  if (algorithm !== "scrypt" || !salt || !encodedHash) return false;
+  const expected = Buffer.from(encodedHash, "base64url");
+  const actual = (await scrypt(password, salt, expected.length)) as Buffer;
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
 export function generateInviteCode() {

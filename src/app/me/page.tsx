@@ -161,7 +161,7 @@ export default async function MePage() {
       <section className="border-t border-red-300/10 py-8">
         <h3 className="text-sm font-semibold text-red-100">个人数据</h3>
         <p className="mt-2 text-sm text-zinc-500">
-          删除后会清除微信身份、登录会话、收藏和标签关注，无法恢复。
+          删除后会清除会员身份、登录会话、收藏和标签关注，无法恢复。
         </p>
         <DeleteMemberButton />
       </section>

@@ -1,6 +1,4 @@
-import QRCode from "qrcode";
 import Link from "next/link";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getCurrentMember, safeReturnPath } from "@/lib/member-auth";
 
@@ -8,12 +6,15 @@ export const dynamic = "force-dynamic";
 
 const errorMessages: Record<string, string> = {
   invite_invalid: "邀请码无效、已过期或次数已用完。",
-  invite_required: "新成员需要邀请码才能加入观察局。",
-  oauth_cancelled: "微信授权没有完成，可以重新试一次。",
-  oauth_failed: "微信登录暂时没有接通，请稍后重试。",
-  state_invalid: "登录请求已过期，请重新开始。",
-  not_configured: "微信登录尚未完成线上配置。",
+  login_failed: "登录名或口令不正确。",
+  login_name_invalid: "登录名只能使用中英文、数字、下划线、横线和点。",
+  login_name_taken: "这个登录名已被使用，请换一个。",
+  register_invalid: "请完整填写注册信息，口令至少 8 位且两次输入一致。",
+  register_failed: "注册没有完成，请检查信息后重试。",
 };
+
+const inputClass =
+  "mt-1 w-full rounded border border-white/15 bg-black px-4 py-3 text-white outline-none transition focus:border-sky-300";
 
 export default async function LoginPage({
   searchParams,
@@ -25,88 +26,93 @@ export default async function LoginPage({
   const next = safeReturnPath(query.next, "/me");
   if (member) redirect(next);
 
-  const userAgent = (await headers()).get("user-agent") ?? "";
-  const isWechat = /micromessenger/i.test(userAgent);
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://observatory.tranceweekend.com";
-  const qrUrl = `${siteUrl}/login?next=${encodeURIComponent(next)}`;
-  const qrCode = await QRCode.toDataURL(qrUrl, {
-    margin: 1,
-    width: 360,
-    color: { dark: "#000000", light: "#ffffff" },
-  });
-
   return (
-    <main className="mx-auto max-w-5xl px-5 py-12">
-      <div className="grid overflow-hidden rounded border border-white/10 bg-white/[0.03] lg:grid-cols-[1fr_400px]">
-        <section className="p-7 md:p-12">
-          <p className="font-mono text-xs uppercase tracking-[0.4em] text-sky-200">
-            members only frequency
-          </p>
-          <h2 className="mt-4 text-4xl font-semibold text-white md:text-6xl">
-            进入你自己的传思雷达
-          </h2>
-          <p className="mt-5 max-w-xl text-base leading-8 text-zinc-400">
-            内容依然公开。登录后可以收藏文章、关注标签，并让首页优先显示你关心的频段。
-          </p>
-
-          {query.error ? (
-            <div className="mt-6 rounded border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-100">
-              {errorMessages[query.error] ?? "登录没有完成，请重新试一次。"}
-            </div>
-          ) : null}
-
-          <div className="mt-8 space-y-5">
-            <form action="/api/auth/wechat/start" method="post" className="space-y-3">
-              <input type="hidden" name="next" value={next} />
-              <label className="block text-sm text-zinc-300" htmlFor="inviteCode">
-                首次加入的邀请码
-              </label>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <input
-                  id="inviteCode"
-                  name="inviteCode"
-                  placeholder="TW-XXXX-XXXX"
-                  autoComplete="one-time-code"
-                  className="min-w-0 flex-1 rounded border border-white/15 bg-black px-4 py-3 font-mono text-white outline-none transition focus:border-sky-300"
-                />
-                <button className="rounded bg-white px-5 py-3 font-semibold text-black transition hover:bg-sky-200">
-                  用微信加入
-                </button>
-              </div>
-            </form>
-
-            <div className="flex items-center gap-3 text-xs text-zinc-600">
-              <span className="h-px flex-1 bg-white/10" />
-              已经加入过
-              <span className="h-px flex-1 bg-white/10" />
-            </div>
-
-            <form action="/api/auth/wechat/start" method="post">
-              <input type="hidden" name="next" value={next} />
-              <button className="w-full rounded border border-white/15 px-5 py-3 text-sm text-zinc-200 transition hover:border-sky-300 hover:text-white">
-                已有账号，直接微信登录
-              </button>
-            </form>
+    <main className="mx-auto max-w-6xl px-5 py-12">
+      <section className="border-b border-white/10 pb-8">
+        <p className="font-mono text-xs uppercase tracking-[0.4em] text-sky-200">
+          members only frequency
+        </p>
+        <h2 className="mt-4 text-4xl font-semibold text-white md:text-6xl">
+          进入你自己的传思雷达
+        </h2>
+        <p className="mt-5 max-w-2xl text-base leading-8 text-zinc-400">
+          所有资讯始终公开。账号只用于保存收藏、关注标签和生成个人频段。
+        </p>
+        {query.error ? (
+          <div className="mt-6 max-w-2xl rounded border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-100">
+            {errorMessages[query.error] ?? "操作没有完成，请重新试一次。"}
           </div>
+        ) : null}
+      </section>
 
-          <Link href="/" className="mt-8 inline-block text-sm text-zinc-500 hover:text-white">
-            暂不登录，继续浏览
-          </Link>
+      <div className="grid gap-px overflow-hidden rounded border border-white/10 bg-white/10 lg:grid-cols-2">
+        <section className="bg-[#050505] p-7 md:p-10">
+          <p className="font-mono text-xs uppercase tracking-[0.35em] text-zinc-500">
+            returning member
+          </p>
+          <h3 className="mt-3 text-2xl font-semibold text-white">已有账号</h3>
+          <form action="/api/auth/login" method="post" className="mt-7 space-y-4">
+            <input type="hidden" name="next" value={next} />
+            <label className="block text-sm text-zinc-300">
+              登录名
+              <input required name="loginName" minLength={2} maxLength={30} autoComplete="username" className={inputClass} />
+            </label>
+            <label className="block text-sm text-zinc-300">
+              登录口令
+              <input required type="password" name="password" minLength={8} maxLength={72} autoComplete="current-password" className={inputClass} />
+            </label>
+            <button className="w-full rounded bg-white px-5 py-3 font-semibold text-black transition hover:bg-sky-200">
+              登录我的雷达
+            </button>
+          </form>
         </section>
 
-        <aside className="border-t border-white/10 bg-white p-7 text-black lg:border-l lg:border-t-0">
-          <p className="font-mono text-xs uppercase tracking-[0.35em] text-zinc-500">
-            scan in wechat
+        <section className="bg-white/[0.03] p-7 md:p-10">
+          <p className="font-mono text-xs uppercase tracking-[0.35em] text-sky-200">
+            first transmission
           </p>
-          {/* eslint-disable-next-line @next/next/no-img-element -- generated QR data URL. */}
-          <img src={qrCode} alt="微信扫码打开登录页" className="mt-5 w-full" />
-          <p className="mt-4 text-sm leading-6 text-zinc-600">
-            {isWechat
-              ? "当前已在微信内打开，可以直接完成公众号授权。"
-              : "请用微信扫一扫打开。首期登录仅支持已认证公众号的网页授权。"}
+          <h3 className="mt-3 text-2xl font-semibold text-white">邀请码注册</h3>
+          <p className="mt-2 text-sm leading-6 text-zinc-500">
+            邀请码只在首次注册时使用，之后凭登录名和口令进入。
           </p>
-        </aside>
+          <form action="/api/auth/register" method="post" className="mt-6 space-y-4">
+            <input type="hidden" name="next" value={next} />
+            <label className="block text-sm text-zinc-300">
+              邀请码
+              <input required name="inviteCode" placeholder="TW-XXXX-XXXX" autoComplete="one-time-code" className={`${inputClass} font-mono`} />
+            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm text-zinc-300">
+                登录名
+                <input required name="loginName" minLength={2} maxLength={30} autoComplete="username" className={inputClass} />
+              </label>
+              <label className="block text-sm text-zinc-300">
+                显示昵称
+                <input required name="nickname" minLength={1} maxLength={30} autoComplete="nickname" className={inputClass} />
+              </label>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm text-zinc-300">
+                设置口令
+                <input required type="password" name="password" minLength={8} maxLength={72} autoComplete="new-password" className={inputClass} />
+              </label>
+              <label className="block text-sm text-zinc-300">
+                再输一次
+                <input required type="password" name="confirmPassword" minLength={8} maxLength={72} autoComplete="new-password" className={inputClass} />
+              </label>
+            </div>
+            <button className="w-full rounded border border-sky-300/50 bg-sky-300 px-5 py-3 font-semibold text-black transition hover:bg-white">
+              创建账号并进入
+            </button>
+          </form>
+        </section>
+      </div>
+
+      <div className="mt-7 flex flex-wrap items-center justify-between gap-4 text-sm text-zinc-500">
+        <span>不登录也能阅读全部资讯、查看本周雷达和投稿。</span>
+        <Link href="/" className="text-zinc-300 transition hover:text-white">
+          暂不登录，继续浏览
+        </Link>
       </div>
     </main>
   );

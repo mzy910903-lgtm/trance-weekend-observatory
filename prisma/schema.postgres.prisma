@@ -106,7 +106,9 @@ model ArticleTag {
 
 model User {
   id             String             @id @default(cuid())
-  wechatOpenId   String             @unique
+  loginName      String?            @unique
+  passwordHash   String?
+  wechatOpenId   String?            @unique
   unionId        String?            @unique
   nickname       String
   avatarUrl      String?

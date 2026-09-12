@@ -7,7 +7,7 @@ export function DeleteMemberButton() {
       method="post"
       className="mt-4"
       onSubmit={(event) => {
-        if (!window.confirm("确认清除微信身份、收藏和关注数据？此操作无法恢复。")) {
+        if (!window.confirm("确认清除会员身份、收藏和关注数据？此操作无法恢复。")) {
           event.preventDefault();
         }
       }}
