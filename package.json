@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:vercel": "prisma db push --schema prisma/schema.postgres.prisma && prisma generate --schema prisma/schema.postgres.prisma && tsx prisma/seed-sources.ts && next build",
+    "build:vercel": "if [ -n \"$VERCEL_ENV\" ]; then prisma db execute --file prisma/ensure-rave-weather-metrics.sql --schema prisma/schema.postgres.prisma; fi; prisma generate --schema prisma/schema.postgres.prisma && next build",
     "start": "next start",
     "lint": "eslint",
     "db:push": "prisma db push --schema prisma/schema.prisma",
@@ -19,6 +19,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1",
     "@prisma/client": "^5.22.0",
     "cheerio": "^1.2.0",
     "clsx": "^2.1.1",

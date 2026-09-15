@@ -190,3 +190,27 @@ model UserActivityDay {
   @@unique([userId, activityDate])
   @@index([activityDate])
 }
+
+model RaveWeatherMetric {
+  id        String   @id @default(cuid())
+  day       String
+  event     String
+  dimension String   @default("")
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([day, event, dimension])
+  @@index([day, event])
+}
+
+model RaveWeatherShare {
+  id        String   @id
+  payload   String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  claimedAt DateTime?
+  claimCount Int     @default(0)
+
+  @@index([expiresAt])
+}

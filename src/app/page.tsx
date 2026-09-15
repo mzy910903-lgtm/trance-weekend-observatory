@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArticleCard } from "@/components/ArticleCard";
+import { RaveWeatherEntryCard } from "@/components/RaveWeatherEntryCard";
 import {
   articleSorts,
   getHomeRadar,
@@ -164,6 +165,10 @@ export default async function Home({ searchParams }: HomeProps) {
             className="aspect-[5/3] w-full object-cover opacity-80 grayscale-[20%]"
           />
         </div>
+      </section>
+
+      <section className="border-b border-white/10 py-6">
+        <RaveWeatherEntryCard />
       </section>
 
       <section className="grid gap-6 border-b border-white/10 py-8 lg:grid-cols-[1fr_340px]">

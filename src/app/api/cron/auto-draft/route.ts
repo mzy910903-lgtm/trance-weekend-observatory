@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { runAutoDraft } from "@/lib/auto-draft";
+import { deleteExpiredRaveWeatherShares } from "@/lib/rave-weather-shares";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -35,6 +36,9 @@ export async function GET(request: Request) {
     );
   }
 
-  const result = await runAutoDraft({ maxSourceAgeDays: bootstrapDays });
-  return NextResponse.json(result, { status: result.ok ? 200 : 207 });
+  const [result, deletedRaveWeatherShares] = await Promise.all([
+    runAutoDraft({ maxSourceAgeDays: bootstrapDays }),
+    deleteExpiredRaveWeatherShares(),
+  ]);
+  return NextResponse.json({ ...result, deletedRaveWeatherShares }, { status: result.ok ? 200 : 207 });
 }

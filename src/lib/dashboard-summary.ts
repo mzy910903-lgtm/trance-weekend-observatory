@@ -1,10 +1,11 @@
 import { ArticleStatus, SubmissionStatus } from "@/lib/categories";
 import { prisma } from "@/lib/prisma";
+import { getRaveWeatherAnalytics } from "@/lib/rave-weather-analytics";
 
 const dateValue = (date: Date | null) => date?.toISOString() ?? null;
 
 export async function getDashboardSummary() {
-  const [articles, submissions, sources, latestPublished, latestScan, failedSources] =
+  const [articles, submissions, sources, latestPublished, latestScan, failedSources, raveWeather] =
     await Promise.all([
       prisma.article.groupBy({
         by: ["status"],
@@ -41,6 +42,7 @@ export async function getDashboardSummary() {
         orderBy: { lastScannedAt: "desc" },
         take: 3,
       }),
+      getRaveWeatherAnalytics(),
     ]);
 
   const countByStatus = (items: { status: string; _count: { _all: number } }[]) =>
@@ -77,5 +79,6 @@ export async function getDashboardSummary() {
       sourcePublishedAt: dateValue(article.sourcePublishedAt),
       publishedAt: dateValue(article.publishedAt),
     })),
+    raveWeather,
   };
 }

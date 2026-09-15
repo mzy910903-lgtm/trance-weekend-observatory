@@ -5,6 +5,8 @@ import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { sourceTypeOptions } from "@/lib/source-types";
 import { classifyTranceScope, editorialScopeLabel } from "@/lib/trance-relevance";
+import { getRaveWeatherAnalytics } from "@/lib/rave-weather-analytics";
+import { weatherDefinitions } from "@/components/rave-weather/weather";
 import {
   InviteManager,
   type InviteView,
@@ -727,6 +729,53 @@ function QueuePanel({
   );
 }
 
+type RaveWeatherAnalytics = Awaited<ReturnType<typeof getRaveWeatherAnalytics>>;
+
+function RaveWeatherAnalyticsPanel({ analytics }: { analytics: RaveWeatherAnalytics }) {
+  const cards = [
+    ["页面访问", analytics.last7Days.views],
+    ["开始体验", analytics.last7Days.starts],
+    ["完成天气", analytics.last7Days.completions],
+    ["二维码领取", analytics.last7Days.claims],
+    ["手机带走", analytics.last7Days.mobileTakes],
+    ["全部分享动作", analytics.last7Days.shares],
+  ] as const;
+  return (
+    <section className="mt-8 space-y-6">
+      <div>
+        <p className="font-mono text-xs uppercase tracking-[0.35em] text-fuchsia-200">Rave Weather · Last 7 Days</p>
+        <h3 className="mt-2 text-3xl font-semibold text-white">天气互动数据</h3>
+        <p className="mt-2 text-sm text-zinc-500">仅记录按天汇总的行为次数，不保存身份、摄像头、音频或动作轨迹。</p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+        {cards.map(([label, value]) => <div key={label} className="rounded border border-white/10 bg-white/[0.03] p-5"><p className="text-xs text-zinc-500">{label}</p><p className="mt-3 font-mono text-4xl text-white">{value}</p></div>)}
+      </div>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="rounded border border-cyan-300/20 bg-cyan-300/[0.04] p-5">
+          <h4 className="text-sm font-semibold text-cyan-100">近 7 天转化</h4>
+          <dl className="mt-5 grid grid-cols-2 gap-5">
+            <div><dt className="text-xs text-zinc-500">完成率</dt><dd className="mt-2 font-mono text-3xl text-white">{analytics.last7Days.completionRate}%</dd></div>
+            <div><dt className="text-xs text-zinc-500">分享率</dt><dd className="mt-2 font-mono text-3xl text-white">{analytics.last7Days.shareRate}%</dd></div>
+            <div><dt className="text-xs text-zinc-500">扫码领取率</dt><dd className="mt-2 font-mono text-3xl text-white">{analytics.last7Days.claimRate}%</dd></div>
+            <div><dt className="text-xs text-zinc-500">领取后带走率</dt><dd className="mt-2 font-mono text-3xl text-white">{analytics.last7Days.mobileTakeRate}%</dd></div>
+            <div><dt className="text-xs text-zinc-500">摄像头开始</dt><dd className="mt-2 font-mono text-xl text-white">{analytics.last7Days.cameraStarts}</dd></div>
+            <div><dt className="text-xs text-zinc-500">试玩开始</dt><dd className="mt-2 font-mono text-xl text-white">{analytics.last7Days.demoStarts}</dd></div>
+          </dl>
+        </div>
+        <div className="rounded border border-fuchsia-300/20 bg-fuchsia-300/[0.04] p-5">
+          <h4 className="text-sm font-semibold text-fuchsia-100">最常生成的天气</h4>
+          <div className="mt-5 space-y-3">
+            {analytics.topWeather.length ? analytics.topWeather.map((weather, index) => <div key={weather.kind} className="flex items-center justify-between gap-4 text-sm"><span className="text-zinc-300"><span className="mr-3 font-mono text-zinc-600">{String(index + 1).padStart(2, "0")}</span>{weatherDefinitions.find(item => item.kind === weather.kind)?.nameZh || weather.kind}</span><b className="font-mono font-normal text-white">{weather.count}</b></div>) : <p className="text-sm text-zinc-500">还没有生成记录。</p>}
+          </div>
+        </div>
+      </div>
+      <div className="overflow-x-auto rounded border border-white/10">
+        <table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-white/[0.04] text-xs text-zinc-500"><tr><th className="p-3">日期</th><th className="p-3">访问</th><th className="p-3">开始</th><th className="p-3">完成</th><th className="p-3">扫码领取</th><th className="p-3">手机带走</th><th className="p-3">分享</th></tr></thead><tbody>{analytics.daily.map(day => <tr key={day.day} className="border-t border-white/10"><td className="p-3 font-mono text-zinc-300">{day.day}</td><td className="p-3">{day.views}</td><td className="p-3">{day.starts}</td><td className="p-3">{day.completions}</td><td className="p-3">{day.claims}</td><td className="p-3">{day.mobileTakes}</td><td className="p-3">{day.shares}</td></tr>)}</tbody></table>
+      </div>
+    </section>
+  );
+}
+
 export default async function AdminPage({
   searchParams,
 }: {
@@ -755,11 +804,11 @@ export default async function AdminPage({
     published,
     publishError,
   } = await searchParams;
-  const activeTab = tab === "sources" || tab === "invites" ? tab : "queue";
+  const activeTab = tab === "sources" || tab === "invites" || tab === "weather" ? tab : "queue";
   const activeStatus = statusFilters.some((item) => item.key === status)
     ? status
     : SubmissionStatus.ANALYZED;
-  const [submissions, sources, inviteRows] = await Promise.all([
+  const [submissions, sources, inviteRows, raveWeatherAnalytics] = await Promise.all([
     prisma.submission.findMany({
       where:
         activeStatus && activeStatus !== "ALL" ? { status: activeStatus } : {},
@@ -784,6 +833,7 @@ export default async function AdminPage({
       },
       orderBy: { createdAt: "desc" },
     }),
+    getRaveWeatherAnalytics(),
   ]);
 
   const invites: InviteView[] = inviteRows.map((invite) => ({
@@ -802,7 +852,7 @@ export default async function AdminPage({
     })),
   }));
 
-  const tabLinkClass = (key: "queue" | "sources" | "invites") =>
+  const tabLinkClass = (key: "queue" | "sources" | "invites" | "weather") =>
     `rounded-full border px-4 py-2 text-sm transition ${
       activeTab === key
         ? "border-sky-300 bg-sky-300 text-black"
@@ -828,6 +878,9 @@ export default async function AdminPage({
         </Link>
         <Link href="/admin?tab=invites" className={tabLinkClass("invites")}>
           邀请码
+        </Link>
+        <Link href="/admin?tab=weather" className={tabLinkClass("weather")}>
+          天气数据
         </Link>
         <form action="/api/admin/logout" method="post">
           <button className="rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-300 transition hover:border-sky-300 hover:text-white">
@@ -879,6 +932,8 @@ export default async function AdminPage({
         <SourcesPanel sources={sources} />
       ) : activeTab === "invites" ? (
         <InviteManager invites={invites} />
+      ) : activeTab === "weather" ? (
+        <RaveWeatherAnalyticsPanel analytics={raveWeatherAnalytics} />
       ) : (
         <QueuePanel submissions={submissions} activeStatus={activeStatus} />
       )}
