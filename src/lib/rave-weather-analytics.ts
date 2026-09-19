@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-const funnelEvents = ["view", "home_entry", "start_camera", "start_demo", "complete", "qr_shown", "qr_claimed", "mobile_share_complete", "mobile_download"] as const;
+const funnelEvents = ["view", "home_entry", "start_camera", "start_demo", "complete", "shared_view", "qr_shown", "qr_claimed", "mobile_share_complete", "mobile_download"] as const;
 
 function shanghaiDay(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -18,9 +18,8 @@ function dayOffset(days: number) {
 }
 
 export async function getRaveWeatherAnalytics() {
-  const [recent, allTime] = await Promise.all([
+  const [rows, allTime] = await Promise.all([
     prisma.raveWeatherMetric.findMany({
-      where: { day: { gte: dayOffset(13) } },
       orderBy: [{ day: "asc" }, { event: "asc" }],
     }),
     prisma.raveWeatherMetric.groupBy({
@@ -29,24 +28,26 @@ export async function getRaveWeatherAnalytics() {
     }),
   ]);
   const today = shanghaiDay();
-  const count = (rows: typeof recent, event: string, from?: string) =>
-    rows.filter(row => row.event === event && (!from || row.day >= from)).reduce((sum, row) => sum + row.count, 0);
-  const summarize = (rows: typeof recent, from?: string) => {
-    const cameraStarts = count(rows, "start_camera", from);
-    const demoStarts = count(rows, "start_demo", from);
-    const completions = count(rows, "complete", from);
-    const qrShown = count(rows, "qr_shown", from);
-    const claims = count(rows, "qr_claimed", from);
-    const mobileTakes = count(rows, "mobile_share_complete", from) + count(rows, "mobile_download", from);
-    const shares = count(rows, "share_poster", from) + count(rows, "copy_link", from) + mobileTakes;
+  const count = (metricRows: typeof rows, event: string, from?: string) =>
+    metricRows.filter(row => row.event === event && (!from || row.day >= from)).reduce((sum, row) => sum + row.count, 0);
+  const summarize = (metricRows: typeof rows, from?: string) => {
+    const cameraStarts = count(metricRows, "start_camera", from);
+    const demoStarts = count(metricRows, "start_demo", from);
+    const completions = count(metricRows, "complete", from);
+    const resultViews = count(metricRows, "shared_view", from);
+    const qrShown = count(metricRows, "qr_shown", from);
+    const claims = count(metricRows, "qr_claimed", from);
+    const mobileTakes = count(metricRows, "mobile_share_complete", from) + count(metricRows, "mobile_download", from);
+    const shares = count(metricRows, "share_poster", from) + count(metricRows, "copy_link", from) + mobileTakes;
     const starts = cameraStarts + demoStarts;
     return {
-      views: count(rows, "view", from),
-      homeEntries: count(rows, "home_entry", from),
+      views: count(metricRows, "view", from),
+      homeEntries: count(metricRows, "home_entry", from),
       starts,
       cameraStarts,
       demoStarts,
       completions,
+      resultViews,
       shares,
       qrShown,
       claims,
@@ -60,6 +61,7 @@ export async function getRaveWeatherAnalytics() {
   const allTimeValue = (event: string) => allTime.filter(row => row.event === event).reduce((sum, row) => sum + (row._sum.count ?? 0), 0);
   const allStarts = allTimeValue("start_camera") + allTimeValue("start_demo");
   const allCompletions = allTimeValue("complete");
+  const allResultViews = allTimeValue("shared_view");
   const allQrShown = allTimeValue("qr_shown");
   const allClaims = allTimeValue("qr_claimed");
   const allMobileTakes = allTimeValue("mobile_share_complete") + allTimeValue("mobile_download");
@@ -69,10 +71,13 @@ export async function getRaveWeatherAnalytics() {
     .map(row => ({ kind: row.dimension, count: row._sum.count ?? 0 }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
-  const days = Array.from({ length: 14 }, (_, index) => dayOffset(13 - index));
+  const days = [...new Set([
+    ...rows.map(row => row.day),
+    ...Array.from({ length: 14 }, (_, index) => dayOffset(13 - index)),
+  ])].sort();
   return {
-    today: summarize(recent.filter(row => row.day === today)),
-    last7Days: summarize(recent, dayOffset(6)),
+    today: summarize(rows.filter(row => row.day === today)),
+    last7Days: summarize(rows, dayOffset(6)),
     allTime: {
       views: allTimeValue("view"),
       homeEntries: allTimeValue("home_entry"),
@@ -80,6 +85,7 @@ export async function getRaveWeatherAnalytics() {
       cameraStarts: allTimeValue("start_camera"),
       demoStarts: allTimeValue("start_demo"),
       completions: allCompletions,
+      resultViews: allResultViews,
       shares: allShares,
       qrShown: allQrShown,
       claims: allClaims,
@@ -90,18 +96,23 @@ export async function getRaveWeatherAnalytics() {
       mobileTakeRate: allClaims ? Math.round((allMobileTakes / allClaims) * 1000) / 10 : 0,
     },
     topWeather: weatherCounts,
-    daily: days.map(day => ({
-      day,
-      views: count(recent.filter(row => row.day === day), "view"),
-      starts: count(recent.filter(row => row.day === day), "start_camera") + count(recent.filter(row => row.day === day), "start_demo"),
-      completions: count(recent.filter(row => row.day === day), "complete"),
-      shares: count(recent.filter(row => row.day === day), "share_poster")
-        + count(recent.filter(row => row.day === day), "copy_link")
-        + count(recent.filter(row => row.day === day), "mobile_share_complete")
-        + count(recent.filter(row => row.day === day), "mobile_download"),
-      claims: count(recent.filter(row => row.day === day), "qr_claimed"),
-      mobileTakes: count(recent.filter(row => row.day === day), "mobile_share_complete") + count(recent.filter(row => row.day === day), "mobile_download"),
-    })),
+    daily: days.map(day => {
+      const dayRows = rows.filter(row => row.day === day);
+      return {
+        day,
+        views: count(dayRows, "view"),
+        starts: count(dayRows, "start_camera") + count(dayRows, "start_demo"),
+        completions: count(dayRows, "complete"),
+        resultViews: count(dayRows, "shared_view"),
+        shares: count(dayRows, "share_poster")
+          + count(dayRows, "copy_link")
+          + count(dayRows, "mobile_share_complete")
+          + count(dayRows, "mobile_download"),
+        qrShown: count(dayRows, "qr_shown"),
+        claims: count(dayRows, "qr_claimed"),
+        mobileTakes: count(dayRows, "mobile_share_complete") + count(dayRows, "mobile_download"),
+      };
+    }),
     trackedEvents: funnelEvents,
   };
 }
