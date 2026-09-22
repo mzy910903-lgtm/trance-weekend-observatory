@@ -15,7 +15,7 @@ export function RaveWeatherEntryCard() {
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.34em] text-cyan-200">Rave Weather · Live Experiment</p>
           <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">今晚，你是什么天气？</h3>
-          <p className="mt-2 text-xs text-zinc-400">42 秒动作挑战，生成一张可以带走的内在天气。</p>
+          <p className="mt-2 text-xs text-zinc-400">30 秒动作挑战，生成一张可以带走的内在天气。</p>
         </div>
         <span className="shrink-0 font-mono text-xs text-fuchsia-200 transition group-hover:translate-x-1">进入 ↗</span>
       </div>

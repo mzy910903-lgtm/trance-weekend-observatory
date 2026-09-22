@@ -6,6 +6,7 @@ import { drawWeatherScene, weatherPalettes } from "./WeatherRenderer";
 
 type Props = {
   elapsed: number;
+  duration: number;
   snapshot: ImageBitmap | null;
   weather: Weather;
 };
@@ -14,6 +15,9 @@ type Particle = { x: number; y: number; angle: number; radius: number; size: num
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 const mix = (from: number, to: number, amount: number) => from + (to - from) * amount;
+const REVEAL_REFERENCE_SECONDS = 7;
+const revealPoint = (seconds: number) => seconds / REVEAL_REFERENCE_SECONDS;
+const revealProgress = (progress: number, start: number, end: number) => clamp01((progress - revealPoint(start)) / (revealPoint(end) - revealPoint(start)));
 
 function createParticles(seed: number) {
   let state = seed || 1;
@@ -56,7 +60,7 @@ function drawCover(
   ctx.drawImage(source, cropX, cropY, cropWidth, cropHeight, offsetX, 0, width, height);
 }
 
-export default function DissolveTransition({ elapsed, snapshot, weather }: Props) {
+export default function DissolveTransition({ elapsed, duration, snapshot, weather }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particles = useMemo(() => createParticles(weather.seed), [weather.seed]);
   const kind = weatherVisualKind(weather);
@@ -72,16 +76,18 @@ export default function DissolveTransition({ elapsed, snapshot, weather }: Props
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const dissolve = clamp01((elapsed - 1) / 2.5);
-    const charge = clamp01((elapsed - 6.2) / 1);
-    const burst = clamp01((elapsed - 7.2) / .8);
-    const renderedDissolve = reduced ? (elapsed >= 3.5 ? 1 : 0) : dissolve;
+    const progress = clamp01(elapsed / duration);
+    const visualTime = progress * 8;
+    const dissolve = revealProgress(progress, .8, 3);
+    const charge = revealProgress(progress, 5.3, 6.3);
+    const burst = revealProgress(progress, 6.3, 7);
+    const renderedDissolve = reduced ? (progress >= revealPoint(3) ? 1 : 0) : dissolve;
     const renderedCharge = reduced ? 0 : charge;
     const renderedBurst = reduced ? 0 : burst;
-    const cloudAlpha = snapshot ? clamp01((elapsed - .65) / 2.1) : clamp01(elapsed / 1.2);
-    drawWeatherScene(canvas, { kind, signals: weather.signals, seed: weather.seed, time: elapsed, intensity: .45 + cloudAlpha * .55, reducedMotion: reduced });
+    const cloudAlpha = snapshot ? revealProgress(progress, .55, 2.4) : revealProgress(progress, 0, 1.05);
+    drawWeatherScene(canvas, { kind, signals: weather.signals, seed: weather.seed, time: visualTime, intensity: .45 + cloudAlpha * .55, reducedMotion: reduced });
 
-    if (snapshot && elapsed < 3.8) {
+    if (snapshot && progress < revealPoint(3.3)) {
       const calm = ["pressure", "fog", "current"].includes(dissolveStyle);
       const radial = ["rays", "sunrise", "spectrum", "aurora"].includes(dissolveStyle);
       const strips = reduced || calm ? 1 : radial ? 22 : 38;
@@ -118,8 +124,8 @@ export default function DissolveTransition({ elapsed, snapshot, weather }: Props
       const originX = particle.x * width;
       const originY = particle.y * height;
       const targetRadius = particle.radius * Math.min(width, height) * .42;
-      const targetX = width * .5 + Math.cos(particle.angle + elapsed * .13) * targetRadius * 1.35;
-      const targetY = height * .49 + Math.sin(particle.angle + elapsed * .1) * targetRadius * .72;
+      const targetX = width * .5 + Math.cos(particle.angle + visualTime * .13) * targetRadius * 1.35;
+      const targetY = height * .49 + Math.sin(particle.angle + visualTime * .1) * targetRadius * .72;
       let x = mix(originX, targetX, renderedDissolve);
       let y = mix(originY, targetY, renderedDissolve);
       if (renderedCharge > 0) {
@@ -142,7 +148,7 @@ export default function DissolveTransition({ elapsed, snapshot, weather }: Props
       } else if (["pressure", "fog", "current"].includes(dissolveStyle)) {
         ctx.lineWidth = Math.max(.5, size * .45); ctx.beginPath(); ctx.ellipse(x, y, size * 4, size, 0, 0, Math.PI * 2); ctx.stroke();
       } else if (dissolveStyle === "spectrum") {
-        ctx.globalAlpha *= .8; ctx.fillStyle = `hsl(${(particle.angle * 57.3 + elapsed * 45) % 360} 95% 68%)`; ctx.beginPath(); ctx.arc(x, y, size * 1.7, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha *= .8; ctx.fillStyle = `hsl(${(particle.angle * 57.3 + visualTime * 45) % 360} 95% 68%)`; ctx.beginPath(); ctx.arc(x, y, size * 1.7, 0, Math.PI * 2); ctx.fill();
       } else if (dissolveStyle === "heat") {
         ctx.lineWidth = Math.max(.7, size); ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + size * 5, y - size * 5, x, y - size * 11); ctx.stroke();
       } else {
@@ -156,11 +162,12 @@ export default function DissolveTransition({ elapsed, snapshot, weather }: Props
     }
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = "source-over";
-  }, [dissolveStyle, elapsed, kind, particles, snapshot, weather.seed, weather.signals]);
+  }, [dissolveStyle, duration, elapsed, kind, particles, snapshot, weather.seed, weather.signals]);
 
   const conflict = weatherConflict(weather);
-  const stage = elapsed < 1 ? "freeze" : elapsed < 3.5 ? "dissolve" : elapsed < 4.8 ? "setup" : elapsed < 6.2 ? "payoff" : elapsed < 7.2 ? "charge" : "impact";
-  const status = elapsed < 3.5 ? "正在把你从画面里拿走" : elapsed < 6.2 ? "天气正在形成" : "系统即将给出意见";
+  const progress = clamp01(elapsed / duration);
+  const stage = progress < revealPoint(.8) ? "freeze" : progress < revealPoint(3) ? "dissolve" : progress < revealPoint(4.1) ? "setup" : progress < revealPoint(5.3) ? "payoff" : progress < revealPoint(6.3) ? "charge" : "impact";
+  const status = progress < revealPoint(3) ? "正在把你从画面里拿走" : progress < revealPoint(5.3) ? "天气正在形成" : "系统即将给出意见";
 
   return <div className={`rw-transition rw-transition-${stage}`} role="status" aria-live="assertive">
     <canvas ref={canvasRef} aria-hidden="true" />
@@ -168,6 +175,6 @@ export default function DissolveTransition({ elapsed, snapshot, weather }: Props
     {stage === "setup" && <p>{conflict.setup}</p>}
     {stage === "payoff" && <p className="rw-transition-payoff">{conflict.payoff}</p>}
     {stage === "impact" && <div className="rw-transition-name"><span>你的内在天气</span><h2>{weatherNameZh(weather)}</h2><b>{weather.name}</b></div>}
-    {stage !== "impact" && <div className="rw-transition-status"><span>{status}</span><b>WEATHER FORMING</b><div><i style={{ width: `${clamp01(elapsed / 8) * 100}%` }} /></div><em>{String(Math.round(clamp01(elapsed / 8) * 100)).padStart(2, "0")}%</em></div>}
+    {stage !== "impact" && <div className="rw-transition-status"><span>{status}</span><b>WEATHER FORMING</b><div><i style={{ width: `${progress * 100}%` }} /></div><em>{String(Math.round(progress * 100)).padStart(2, "0")}%</em></div>}
   </div>;
 }

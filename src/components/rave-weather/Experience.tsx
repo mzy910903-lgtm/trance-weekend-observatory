@@ -13,9 +13,9 @@ import { useBeat } from "./useBeat";
 import { usePose } from "./usePose";
 import { trackRaveWeatherEvent } from "@/lib/rave-weather-events";
 
-const CAPTURE_SECONDS = 34;
-const TRANSITION_SECONDS = 8;
-const TOTAL_SECONDS = 42;
+const CAPTURE_SECONDS = 23;
+const TRANSITION_SECONDS = 7;
+const TOTAL_SECONDS = 30;
 const RESULT_REVEAL_SECONDS = 4;
 const CLAIM_WINDOW_SECONDS = 35;
 const CLAIMED_SECONDS = 6;
@@ -23,7 +23,7 @@ type ClaimStage = "reveal" | "preparing" | "waiting" | "claimed";
 const attractMessages = [
   { title: "挥一下，会放电。", english: "MOVE FAST. MAKE LIGHTNING." },
   { title: "打开双臂，天空会让路。", english: "OPEN UP. MOVE THE WEATHER." },
-  { title: "42 秒，带走一种天气。", english: "YOUR NIGHT. YOUR WEATHER." },
+  { title: "30 秒，带走一种天气。", english: "YOUR NIGHT. YOUR WEATHER." },
 ] as const;
 const attractKinds = ["electricStorm", "onBeatAurora", "afterpartyRainbow"] as const;
 type BeatTarget = { signal: keyof Signals; direction: "above" | "below"; threshold: number };
@@ -41,13 +41,17 @@ type ExperienceBeat = {
   quip?: string;
 };
 const beats: ExperienceBeat[] = [
-  { id: "calibrate", start: 0, end: 3, title: "天气正在认人。\n先别演。", english: "CALIBRATING YOUR ATMOSPHERE.", sub: "系统正在建立错误的第一印象。", effect: "正在对焦 / CALIBRATING" },
-  { id: "release", start: 3, end: 11, title: "肩膀，\n放下来。", english: "LET YOUR SHOULDERS DROP.", sub: "保持一下，让气压真的降下来。", effect: "目标：气压低于 60", targets: [{ signal: "pressure", direction: "below", threshold: 60 }], success: "气压下降 ✓", quip: "嘴硬指数仍然很高。" },
-  { id: "move", start: 11, end: 20, title: "跟着房间，\n动一下。", english: "MOVE WITH THE ROOM.", sub: "不用跳得好看，系统也没这个资格。", effect: "目标：捕获连续气流", targets: [{ signal: "movement", direction: "above", threshold: 38 }], success: "气流捕获 ✓", quip: "你说这只是晃两下。" },
-  { id: "open", start: 20, end: 29, title: "把身体，\n打开。", english: "OPEN UP.", sub: "展开双臂，给天空一点空间。", effect: "目标：打开天空", targets: [{ signal: "openness", direction: "above", threshold: 60 }], success: "天空已打开 ✓", quip: "系统误以为你要压轴。" },
-  { id: "surge", start: 29, end: 34, title: "最后五秒，\n别装了。来一下。", english: "ONE LAST MOVE. MAKE IT COUNT.", sub: "做今晚最大的动作。后果由天气承担。", effect: "检测克制中…", targets: [{ signal: "movement", direction: "above", threshold: 65 }, { signal: "openness", direction: "above", threshold: 75 }], targetMode: "any", success: "克制已下线 ✓", quip: "系统决定假装没看见。" },
+  { id: "calibrate", start: 0, end: 2, title: "天气正在认人。\n先别演。", english: "CALIBRATING YOUR ATMOSPHERE.", sub: "系统正在建立错误的第一印象。", effect: "正在对焦 / CALIBRATING" },
+  { id: "release", start: 2, end: 7, title: "肩膀，\n放下来。", english: "LET YOUR SHOULDERS DROP.", sub: "保持一下，让气压真的降下来。", effect: "目标：气压低于 60", targets: [{ signal: "pressure", direction: "below", threshold: 60 }], success: "气压下降 ✓", quip: "嘴硬指数仍然很高。" },
+  { id: "move", start: 7, end: 12, title: "跟着房间，\n动一下。", english: "MOVE WITH THE ROOM.", sub: "不用跳得好看，系统也没这个资格。", effect: "目标：捕获连续气流", targets: [{ signal: "movement", direction: "above", threshold: 38 }], success: "气流捕获 ✓", quip: "你说这只是晃两下。" },
+  { id: "open", start: 12, end: 18, title: "把身体，\n打开。", english: "OPEN UP.", sub: "展开双臂，给天空一点空间。", effect: "目标：打开天空", targets: [{ signal: "openness", direction: "above", threshold: 60 }], success: "天空已打开 ✓", quip: "系统误以为你要压轴。" },
+  { id: "surge", start: 18, end: 23, title: "最后五秒，\n别装了。来一下。", english: "ONE LAST MOVE. MAKE IT COUNT.", sub: "做今晚最大的动作。后果由天气承担。", effect: "检测克制中…", targets: [{ signal: "movement", direction: "above", threshold: 65 }, { signal: "openness", direction: "above", threshold: 75 }], targetMode: "any", success: "克制已下线 ✓", quip: "系统决定假装没看见。" },
 ];
 const challengeBeats = beats.filter(beat => beat.targets);
+const interactionStart = challengeBeats[0]?.start ?? 0;
+const surgeBeat = beats.find(beat => beat.id === "surge") ?? beats[beats.length - 1];
+const surgeDuration = surgeBeat.end - surgeBeat.start;
+const transitionImpactStart = TRANSITION_SECONDS * .9;
 const easterEggs = ["天气越权", "临时主舞台", "附近气候受到牵连"] as const;
 const gestureLabels: Record<GestureKind, string> = { drop: "气压落地", sweepLeft: "左侧闪电", sweepRight: "右侧闪电", open: "天空撑开", surge: "能量超载" };
 export default function Experience({ initialResult = null }: { initialResult?: Weather | null }) {
@@ -158,7 +162,7 @@ export default function Experience({ initialResult = null }: { initialResult?: W
     const timer = setInterval(() => {
       const p = live.current;
       // The permission prompt pauses the clock. Model warm-up is part of the
-      // three-second recognition beat; tracking loss never extends the experience.
+      // recognition beat; tracking loss never extends the experience.
       if (p.mode === "camera" && !["loading", "ready"].includes(p.poseStatus)) return;
       let next = { ...poseSignals.current };
       if (p.mode === "demo") {
@@ -169,7 +173,7 @@ export default function Experience({ initialResult = null }: { initialResult?: W
       setSignals(next);
       const sampleElapsed = elapsedRef.current;
       const now = performance.now();
-      const sampleWeight = sampleElapsed >= 29 ? 2 : 1;
+      const sampleWeight = sampleElapsed >= surgeBeat.start ? 2 : 1;
       const a = aggregate.current; a.weight += sampleWeight;
       for (const k of ["movement", "openness", "stillness", "pressure"] as const) a[k] += next[k] * sampleWeight;
       peaks.current.movement = Math.max(peaks.current.movement, next.movement);
@@ -179,7 +183,7 @@ export default function Experience({ initialResult = null }: { initialResult?: W
       let gestureStrength = 0;
       const visual = poseVisuals.current;
       const ready = (kind: GestureKind, cooldown: number) => now - gestureCooldowns.current[kind] >= cooldown;
-      if (sampleElapsed >= 3 && (p.mode === "demo" || p.present)) {
+      if (sampleElapsed >= interactionStart && (p.mode === "demo" || p.present)) {
         if (p.mode === "demo") {
           if (pointer.current.energy > .48 && ready("surge", 520)) { gestureKind = "surge"; gestureStrength = pointer.current.energy; }
           else if (next.openness > 64 && previousSignals.current.openness <= 58 && ready("open", 780)) { gestureKind = "open"; gestureStrength = next.openness / 100; }
@@ -235,7 +239,7 @@ export default function Experience({ initialResult = null }: { initialResult?: W
       else setGoalProgress(0);
 
       const highlightSlot = Math.floor(sampleElapsed * 8);
-      if (sampleElapsed >= 3 && highlightSlot !== lastHighlightAt.current) {
+      if (sampleElapsed >= interactionStart && highlightSlot !== lastHighlightAt.current) {
         lastHighlightAt.current = highlightSlot;
         const points = p.mode === "demo" ? (() => {
           const sway = (pointer.current.x - .5) * .7, spread = .7 + next.openness / 80;
@@ -380,8 +384,8 @@ export default function Experience({ initialResult = null }: { initialResult?: W
   const sessionProgress = Math.min(1, elapsed / CAPTURE_SECONDS);
   const completionRatio = Object.keys(completedBeats).length / challengeBeats.length;
   const sessionIntensity = Math.min(1, .15 + sessionProgress * .68 + completionRatio * .12 + (beat.id === "surge" ? .12 : 0));
-  const finalPush = mode !== "idle" && !result && !pendingResult && elapsed >= 29;
-  const impactStarted = transitionElapsed >= 7.2;
+  const finalPush = mode !== "idle" && !result && !pendingResult && elapsed >= surgeBeat.start;
+  const impactStarted = transitionElapsed >= transitionImpactStart;
   useEffect(() => {
     if (!sound || !audio.current || mode === "idle" || pendingResult || result) return;
     const ctx = audio.current, osc = ctx.createOscillator(), gain = ctx.createGain();
@@ -407,9 +411,9 @@ export default function Experience({ initialResult = null }: { initialResult?: W
     const ctx = audio.current, osc = ctx.createOscillator(), gain = ctx.createGain();
     osc.type = "sine";
     osc.frequency.setValueAtTime(32, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(92, ctx.currentTime + 5);
+    osc.frequency.exponentialRampToValueAtTime(92, ctx.currentTime + surgeDuration);
     gain.gain.setValueAtTime(.004, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(.065, ctx.currentTime + 4.8);
+    gain.gain.linearRampToValueAtTime(.065, ctx.currentTime + Math.max(.1, surgeDuration - .2));
     osc.connect(gain); gain.connect(ctx.destination); osc.start();
     return () => { try { osc.stop(); } catch {} osc.disconnect(); gain.disconnect(); };
   }, [finalPush, sound]);
@@ -429,12 +433,12 @@ export default function Experience({ initialResult = null }: { initialResult?: W
     const airFilter = ctx.createBiquadFilter();
     const airGain = ctx.createGain();
     air.buffer = airBuffer; air.loop = true; airFilter.type = "bandpass"; airFilter.frequency.value = 720; airFilter.Q.value = .8;
-    airGain.gain.setValueAtTime(.006, ctx.currentTime); airGain.gain.linearRampToValueAtTime(.038, ctx.currentTime + 6.8);
+    airGain.gain.setValueAtTime(.006, ctx.currentTime); airGain.gain.linearRampToValueAtTime(.038, ctx.currentTime + Math.max(.1, transitionImpactStart - .3));
     air.connect(airFilter); airFilter.connect(airGain); airGain.connect(ctx.destination); air.start();
     const rise = ctx.createOscillator();
     const riseGain = ctx.createGain();
-    rise.type = "sine"; rise.frequency.setValueAtTime(31, ctx.currentTime); rise.frequency.exponentialRampToValueAtTime(76, ctx.currentTime + 7.2);
-    riseGain.gain.setValueAtTime(.004, ctx.currentTime); riseGain.gain.linearRampToValueAtTime(.055, ctx.currentTime + 7.1);
+    rise.type = "sine"; rise.frequency.setValueAtTime(31, ctx.currentTime); rise.frequency.exponentialRampToValueAtTime(76, ctx.currentTime + transitionImpactStart);
+    riseGain.gain.setValueAtTime(.004, ctx.currentTime); riseGain.gain.linearRampToValueAtTime(.055, ctx.currentTime + Math.max(.1, transitionImpactStart - .1));
     rise.connect(riseGain); riseGain.connect(ctx.destination); rise.start();
     return () => { click.disconnect(); clickGain.disconnect(); air.stop(); air.disconnect(); airFilter.disconnect(); airGain.disconnect(); rise.stop(); rise.disconnect(); riseGain.disconnect(); };
   }, [pendingResult, sound]);
@@ -540,7 +544,7 @@ export default function Experience({ initialResult = null }: { initialResult?: W
   const active = mode !== "idle" && !result && !pendingResult;
   const current = signals.movement > 65 ? "WIND" : signals.movement > 30 ? "DRIFT" : "FOG";
   const currentZh = current === "WIND" ? "风" : current === "DRIFT" ? "漂移" : "雾";
-  const remaining = pendingResult ? Math.max(0, Math.ceil(TRANSITION_SECONDS - transitionElapsed)) : Math.max(8, Math.ceil(TOTAL_SECONDS - elapsed));
+  const remaining = pendingResult ? Math.max(0, Math.ceil(TRANSITION_SECONDS - transitionElapsed)) : Math.max(TRANSITION_SECONDS, Math.ceil(TOTAL_SECONDS - elapsed));
   const cameraStatus = poseStatus === "permission" ? "等待摄像头权限" : poseStatus === "loading" ? "正在启动天气系统" : posePresent ? "身体已进入天气系统" : elapsed > 0 ? "暂时离开画面 · 体验继续" : "请站进取景框";
   const beatLabel = beatState.status === "off" ? "节拍待机" : beatState.status === "permission" ? "等待麦克风" : beatState.source === "microphone" ? beatState.confidence >= .45 ? `节拍锁定 ${beatState.bpm} BPM` : "正在听现场节拍" : "内部节拍运行中";
   const comboLabel = combo.level === "storm" ? "系统失控" : combo.level === "override" ? "天气越界" : combo.level === "airflow" ? "气流形成" : "等待连招";
@@ -554,7 +558,7 @@ export default function Experience({ initialResult = null }: { initialResult?: W
     <Atmosphere signals={displayedWeather?.signals ?? signals} phase={phase} seed={displayedWeather?.seed ?? 314159} visualKind={displayedWeather ? weatherVisualKind(displayedWeather) : attractActive ? attractKinds[attractIndex] : undefined} transitionProgress={pendingResult ? transitionElapsed / TRANSITION_SECONDS : 0} sessionProgress={active ? sessionProgress : attractActive ? .6 : 0} beatState={beatState} comboState={combo} lastGesture={lastGesture} />
     {result?.highlight && claimStage === "reveal" && <HighlightLoop highlight={result.highlight} weather={result} />}
     <div className="rw-vignette" />
-    {pendingResult && <DissolveTransition elapsed={transitionElapsed} snapshot={cameraSnapshot} weather={pendingResult} />}
+    {pendingResult && <DissolveTransition elapsed={transitionElapsed} duration={TRANSITION_SECONDS} snapshot={cameraSnapshot} weather={pendingResult} />}
     <header className="rw-header"><a href="/rave-weather" className="rw-brand">RAVE<br />WEATHER<span>®</span></a><div className="rw-edition">TRANCEWEEKEND<span>内在天气体验</span></div><button className="rw-icon" onClick={toggleSound} aria-label={sound ? "关闭声音" : "开启声音"}>{sound ? "◖))" : "◖×"}<span>声音 {sound ? "开" : "关"}</span></button></header>
     <div className="rw-topline"><span><i className={active || claimStage === "waiting" ? "rw-dot live" : "rw-dot"} />{result ? claimStage === "claimed" ? "天气已被手机接住" : claimStage === "waiting" ? "等待手机领取" : claimStage === "preparing" ? "正在生成领取码" : "天气已经生成" : pendingResult ? "正在形成天气" : mode === "camera" ? `${cameraStatus} · ${beatLabel}` : mode === "demo" ? `试玩模式 · ${beatLabel}` : "天气系统正在呼吸"}</span><span>北京 <b>{clock || "--:--:--"}</b></span></div>
     <div className="rw-coordinate">39°54′ N<br />116°24′ E</div><div className="rw-side">NO TWO NIGHTS. NO TWO WEATHERS.</div>
@@ -609,14 +613,14 @@ export default function Experience({ initialResult = null }: { initialResult?: W
         {combo.easterEggZh && <div className="rw-easter-egg">⚠ 系统事件<br /><b>{combo.easterEggZh}</b></div>}
         {feedback && <div className="rw-goal-stamp" key={feedback.id}><b>{feedback.stamp}</b><span>{feedback.quip}</span></div>}
         {finalPush && <strong className="rw-final-countdown" key={Math.ceil(CAPTURE_SECONDS - elapsed)}>{Math.max(1, Math.ceil(CAPTURE_SECONDS - elapsed))}</strong>}
-        <p className="rw-auto-end">距离结果还有 <b>00:{String(remaining).padStart(2, "0")}</b><span>第 42 秒自动生成</span></p>
+        <p className="rw-auto-end">距离结果还有 <b>00:{String(remaining).padStart(2, "0")}</b><span>第 {TOTAL_SECONDS} 秒自动生成</span></p>
         <div className="rw-session-actions"><button className="rw-primary rw-finish" onClick={finishNow}>立即生成结果 <span>↗</span></button><button className="rw-text-button" onClick={reset}>取消体验 ×</button></div>
       </> : <>
         <p className="rw-eyebrow">{attractActive ? "天气系统正在寻找下一位" : "一张没有照片的身体肖像"}</p>
         <h1 className="rw-home-title" key={attractActive ? attractIndex : "home"}>{attractActive ? attractMessage.title : "今晚，你是什么天气？"}</h1>
         <p className="rw-subtitle">{attractActive ? attractMessage.english : "WHAT DID THE NIGHT DO TO YOU?"}</p>
         <div className="rw-entry"><button className="rw-primary" onClick={startCamera}>进入天气系统 <span>↗</span></button><button className="rw-text-button" onClick={startDemo}>不用摄像头，先试玩 <span>→</span></button></div>
-        <p className="rw-duration">42 秒。四次挑战。只在今晚。</p>
+        <p className="rw-duration">{TOTAL_SECONDS} 秒。四次挑战。只在今晚。</p>
       </>}
     </section>
     {active && <aside className={`rw-session ${beat.id === "surge" ? "surge" : ""}`}><div className="rw-session-heading"><span>{mode === "demo" ? "移动指针 / 左右展开，上下落肩" : "天气形成度"}</span><b>{String(Math.round(sessionProgress * 100)).padStart(2, "0")}%</b></div><div className="rw-progress"><i style={{ width: `${sessionProgress * 100}%` }} /></div><div className="rw-steps">{challengeBeats.map((item, i) => <span className={`${completedBeats[item.id] ? "completed" : ""} ${beat.id === item.id ? "selected" : ""}`} key={item.id}>{String(i + 1).padStart(2, "0")} {item.id === "release" ? "放松" : item.id === "move" ? "移动" : item.id === "open" ? "打开" : "爆发"}</span>)}</div></aside>}
