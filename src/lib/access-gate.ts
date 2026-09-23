@@ -1,6 +1,7 @@
 export const ACCESS_GATE_COOKIE_NAME = "tw_lab_access";
 
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+const MIN_PASSWORD_LENGTH = 6;
 const MIN_SECRET_LENGTH = 32;
 
 function accessPassword() {
@@ -60,9 +61,7 @@ export function isAccessGateConfigured() {
   const password = accessPassword();
   return Boolean(
     password &&
-      password.length >= 8 &&
-      /[a-z]/.test(password) &&
-      /[A-Z]/.test(password) &&
+      password.length >= MIN_PASSWORD_LENGTH &&
       cookieSecret(),
   );
 }
