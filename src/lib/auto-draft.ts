@@ -5,11 +5,13 @@ import { judgeNewsRecency } from "@/lib/news-recency";
 import { prisma } from "@/lib/prisma";
 import { scanSource } from "@/lib/source-scan";
 import { classifyTranceScope } from "@/lib/trance-relevance";
+import { archiveExpiredDrafts } from "@/lib/draft-retention";
 
 const DEFAULT_AUTO_DRAFT_LIMIT = 20;
 const MAX_AUTO_DRAFT_LIMIT = 30;
 const DEFAULT_AUTO_DRAFT_MIN_CANDIDATES = 10;
-const DEFAULT_DRAFT_RETENTION_DAYS = 7;
+const DEFAULT_ANALYSIS_CONCURRENCY = 5;
+const MAX_ANALYSIS_CONCURRENCY = 8;
 
 function parseAutoDraftLimit() {
   const value = Number.parseInt(process.env.AUTO_DRAFT_LIMIT ?? "", 10);
@@ -17,16 +19,20 @@ function parseAutoDraftLimit() {
   return Math.min(Math.max(value, 1), MAX_AUTO_DRAFT_LIMIT);
 }
 
-function parseDraftRetentionDays() {
-  const value = Number.parseInt(process.env.AUTO_DRAFT_RETENTION_DAYS ?? "", 10);
-  if (Number.isNaN(value)) return DEFAULT_DRAFT_RETENTION_DAYS;
-  return Math.min(Math.max(value, 1), 30);
-}
-
 function parseAutoDraftMinCandidates(limit: number) {
   const value = Number.parseInt(process.env.AUTO_DRAFT_MIN_CANDIDATES ?? "", 10);
   if (Number.isNaN(value)) return Math.min(DEFAULT_AUTO_DRAFT_MIN_CANDIDATES, limit);
   return Math.min(Math.max(value, 0), limit);
+}
+
+function parseAnalysisConcurrency() {
+  const value = Number.parseInt(
+    process.env.AUTO_DRAFT_ANALYSIS_CONCURRENCY ?? "",
+    10,
+  );
+
+  if (Number.isNaN(value)) return DEFAULT_ANALYSIS_CONCURRENCY;
+  return Math.min(Math.max(value, 1), MAX_ANALYSIS_CONCURRENCY);
 }
 
 export function calculateContextLimit(
@@ -40,49 +46,6 @@ export function calculateContextLimit(
   );
 
   return Math.min(Math.floor(limit * ratio), pairedCoreLimit);
-}
-
-async function cleanupExpiredDrafts() {
-  const retentionDays = parseDraftRetentionDays();
-  const expiresBefore = new Date(
-    Date.now() - retentionDays * 24 * 60 * 60 * 1000,
-  );
-
-  const expiredDrafts = await prisma.article.findMany({
-    where: {
-      status: ArticleStatus.DRAFT,
-      publishedAt: null,
-      createdAt: { lt: expiresBefore },
-    },
-    select: { id: true, submissionId: true },
-  });
-
-  if (expiredDrafts.length === 0) {
-    return { retentionDays, archived: 0 };
-  }
-
-  await prisma.$transaction(async (tx) => {
-    await tx.article.updateMany({
-      where: { id: { in: expiredDrafts.map((draft) => draft.id) } },
-      data: { status: ArticleStatus.ARCHIVED },
-    });
-
-    const submissionIds = expiredDrafts
-      .map((draft) => draft.submissionId)
-      .filter((id): id is string => Boolean(id));
-
-    if (submissionIds.length > 0) {
-      await tx.submission.updateMany({
-        where: { id: { in: submissionIds } },
-        data: {
-          status: SubmissionStatus.REJECTED,
-          errorMessage: `自动清理：草稿超过 ${retentionDays} 天未发布，已移出候选池。`,
-        },
-      });
-    }
-  });
-
-  return { retentionDays, archived: expiredDrafts.length };
 }
 
 async function cleanupStaleDrafts(maxSourceAgeDays?: number) {
@@ -232,7 +195,7 @@ export async function runAutoDraft(options?: {
       ? parseAutoDraftLimit()
       : Math.min(Math.max(requestedLimit, 1), MAX_AUTO_DRAFT_LIMIT);
   const minCandidates = parseAutoDraftMinCandidates(limit);
-  const cleanup = await cleanupExpiredDrafts();
+  const cleanup = await archiveExpiredDrafts();
   const staleCleanup = await cleanupStaleDrafts(options?.maxSourceAgeDays);
   const scopeCleanup = await cleanupOutOfScopeCandidates();
   const sources = await prisma.source.findMany({
@@ -352,21 +315,33 @@ export async function runAutoDraft(options?: {
     candidates: typeof pendingSubmissions,
     max: number,
   ) {
+    const selected = candidates.slice(0, max);
+    const concurrency = parseAnalysisConcurrency();
     let completed = 0;
 
-    for (const submission of candidates) {
-      if (completed >= max) break;
+    // A sequential scrape + AI pass regularly exceeds Vercel's 60-second
+    // function window. Small batches keep pressure off the provider while
+    // letting the daily cron finish a useful candidate set in one run.
+    for (let start = 0; start < selected.length; start += concurrency) {
+      const batch = selected.slice(start, start + concurrency);
+      const results = await Promise.all(
+        batch.map(async (submission) => ({
+          submission,
+          result: await analyzeSubmission(submission.id, options),
+        })),
+      );
 
-      const result = await analyzeSubmission(submission.id, options);
-      if (result.ok) {
-        analyzed.push(submission.id);
-        completed += 1;
-      } else {
-        analysisFailures.push({
-          id: submission.id,
-          url: submission.url,
-          error: result.error ?? "分析失败。",
-        });
+      for (const { submission, result } of results) {
+        if (result.ok) {
+          analyzed.push(submission.id);
+          completed += 1;
+        } else {
+          analysisFailures.push({
+            id: submission.id,
+            url: submission.url,
+            error: result.error ?? "分析失败。",
+          });
+        }
       }
     }
 
