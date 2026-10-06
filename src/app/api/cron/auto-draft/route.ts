@@ -40,5 +40,24 @@ export async function GET(request: Request) {
     runAutoDraft({ maxSourceAgeDays: bootstrapDays }),
     deleteExpiredRaveWeatherShares(),
   ]);
+
+  console.info(
+    "[auto-draft] completed",
+    JSON.stringify({
+      scannedSources: result.scannedSources,
+      discovered: result.created,
+      selectedPending: result.selectedPending,
+      analyzed: result.analyzed,
+      analyzedCore: result.analyzedCore,
+      analyzedContext: result.analyzedContext,
+      skipped: result.skipped,
+      sourceFailures: result.sourceFailures.length,
+      analysisFailures: result.analysisFailures.length,
+      expiredDraftsArchived: result.expiredDraftsArchived,
+      staleDraftsArchived: result.staleDraftsArchived,
+      offTopicDraftsArchived: result.offTopicDraftsArchived,
+    }),
+  );
+
   return NextResponse.json({ ...result, deletedRaveWeatherShares }, { status: result.ok ? 200 : 207 });
 }
