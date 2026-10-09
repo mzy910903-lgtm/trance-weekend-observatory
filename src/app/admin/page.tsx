@@ -163,19 +163,64 @@ function QueueCard({
               </>
             ) : null}
           </div>
-          <a
-            href={submission.url}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-2 block break-all text-sm text-sky-200 hover:underline"
-          >
-            {submission.url}
-          </a>
-          {submission.note ? (
-            <p className="mt-3 whitespace-pre-line text-sm text-zinc-400">
-              备注：{submission.note}
-            </p>
-          ) : null}
+          {submission.article ? (
+            <div className="mt-4 grid gap-4 sm:grid-cols-[132px_minmax(0,1fr)]">
+              <div className="overflow-hidden rounded border border-white/10 bg-black">
+                {/* eslint-disable-next-line @next/next/no-img-element -- reviewed article image may be a remote og:image. */}
+                <img
+                  src={submission.article.coverImage || "/default-cover.svg"}
+                  alt=""
+                  className="aspect-[5/3] h-full w-full object-cover"
+                />
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-sky-200">
+                  <span>中文转译与 AI 分析已完成</span>
+                  <span className="text-zinc-600">/</span>
+                  <span>{categoryLabel(submission.article.category)}</span>
+                  <span className="text-zinc-600">/</span>
+                  <span>I {submission.article.importanceScore} · A {submission.article.artistryScore} · H {submission.article.humorScore}</span>
+                </div>
+                <h3 className="mt-2 text-lg font-semibold leading-7 text-white">
+                  {submission.article.title}
+                </h3>
+                <p className="mt-2 line-clamp-3 text-sm leading-6 text-zinc-300">
+                  {submission.article.summary}
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {submission.article.tags.slice(0, 3).map(({ tag }) => (
+                    <span key={tag.id} className="rounded-full bg-white/[0.06] px-2 py-1 text-xs text-zinc-400">
+                      #{tag.name}
+                    </span>
+                  ))}
+                  <a
+                    href={submission.article.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ml-auto text-xs text-sky-200 hover:underline"
+                  >
+                    原文链接
+                  </a>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <a
+                href={submission.url}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 block break-all text-sm text-sky-200 hover:underline"
+              >
+                {submission.url}
+              </a>
+              {submission.note ? (
+                <p className="mt-3 whitespace-pre-line text-sm text-zinc-400">
+                  备注：{submission.note}
+                </p>
+              ) : null}
+            </>
+          )}
         </div>
 
         {submission.status === SubmissionStatus.PENDING ||
